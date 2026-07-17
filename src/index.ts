@@ -1,102 +1,259 @@
-/**
- * LLM Chat Application Template
- *
- * A simple chat application using Cloudflare Workers AI.
- * This template demonstrates how to implement an LLM-powered chat interface with
- * streaming responses using Server-Sent Events (SSE).
- *
- * @license MIT
- */
-import { Env, ChatMessage } from "./types";
+type ChatRole = "system" | "user" | "assistant";
 
-// Model ID for Workers AI model
-// https://developers.cloudflare.com/workers-ai/models/
+type ChatMessage = {
+  role: ChatRole;
+  content: string;
+};
+
+type WorkerEnv = {
+  AI: {
+    run: (
+      model: string,
+      input: Record<string, unknown>,
+      options?: Record<string, unknown>
+    ) => Promise<unknown>;
+  };
+  ASSETS: {
+    fetch: (request: Request) => Promise<Response>;
+  };
+};
+
 const MODEL_ID = "@cf/meta/llama-3.1-8b-instruct-fp8";
 
-// Default system prompt
-const SYSTEM_PROMPT =
-	"You are a helpful, friendly assistant. Provide concise and accurate responses.";
+const SYSTEM_PROMPT = `
+You are Kairo, a calm, intelligent, and helpful personal planning assistant.
+
+Your responsibilities:
+- Answer normal conversational questions naturally.
+- Help users organize tasks, calendar events, goals, and schedules.
+- Improve casual wording into concise, professional titles.
+- Ask one focused follow-up question when important information is missing.
+- Never claim that an event, task, reminder, or goal has already been saved.
+- Never assume that an unclear date means today.
+- Never assume an event time when the user did not provide one.
+- Before proposing an app action, clearly summarize what should be created.
+- The Kairo mobile app handles confirmation and saving.
+- Keep responses friendly, useful, and reasonably concise.
+
+Example:
+User: Sunday is the World Cup final. Add it to my calendar.
+Assistant: I can prepare the World Cup Final for Sunday. Should I make it an all-day event, or does it start at a specific time?
+`.trim();
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+function jsonResponse(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json",
+    },
+  });
+}
+
+function isChatMessage(value: unknown): value is ChatMessage {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const message = value as Record<string, unknown>;
+
+  return (
+    (message.role === "user" || message.role === "assistant") &&
+    typeof message.content === "string" &&
+    message.content.trim().length > 0
+  );
+}
 
 export default {
-	/**
-	 * Main request handler for the Worker
-	 */
-	async fetch(
-		request: Request,
-		env: Env,
-		ctx: ExecutionContext,
-	): Promise<Response> {
-		const url = new URL(request.url);
+  async fetch(request: Request, env: WorkerEnv): Promise<Response> {
+    const url = new URL(request.url);
 
-		// Handle static assets (frontend)
-		if (url.pathname === "/" || !url.pathname.startsWith("/api/")) {
-			return env.ASSETS.fetch(request);
-		}
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: corsHeaders,
+      });
+    }
 
-		// API Routes
-		if (url.pathname === "/api/chat") {
-			// Handle POST requests for chat
-			if (request.method === "POST") {
-				return handleChatRequest(request, env);
-			}
+    // Test route for checking whether the Worker is online.
+    if (url.pathname === "/health" && request.method === "GET") {
+      return jsonResponse({
+        ok: true,
+        service: "Kairo AI",
+        status: "ready",
+      });
+    }
 
-			// Method not allowed for other request types
-			return new Response("Method not allowed", { status: 405 });
-		}
+    // Endpoint that the Kairo mobile application will use.
+    if (url.pathname === "/api/kairo" && request.method === "POST") {
+      return handleKairoRequest(request, env);
+    }
 
-		// Handle 404 for unmatched routes
-		return new Response("Not found", { status: 404 });
-	},
-} satisfies ExportedHandler<Env>;
+    // Keep the original template chat page working.
+    if (url.pathname === "/api/chat") {
+      if (request.method !== "POST") {
+        return new Response("Method not allowed", {
+          status: 405,
+        });
+      }
 
-/**
- * Handles chat API requests
- */
-async function handleChatRequest(
-	request: Request,
-	env: Env,
+      return handleTemplateChatRequest(request, env);
+    }
+
+    // Serve the original template website.
+    if (url.pathname === "/" || !url.pathname.startsWith("/api/")) {
+      return env.ASSETS.fetch(request);
+    }
+
+    return jsonResponse(
+      {
+        ok: false,
+        error: "Route not found.",
+        availableRoutes: [
+          "GET /health",
+          "POST /api/kairo",
+          "POST /api/chat",
+        ],
+      },
+      404
+    );
+  },
+};
+
+async function handleKairoRequest(
+  request: Request,
+  env: WorkerEnv
 ): Promise<Response> {
-	try {
-		// Parse JSON request body
-		const { messages = [] } = (await request.json()) as {
-			messages: ChatMessage[];
-		};
+  try {
+    const body = (await request.json().catch(() => null)) as
+      | Record<string, unknown>
+      | null;
 
-		// Add system prompt if not present
-		if (!messages.some((msg) => msg.role === "system")) {
-			messages.unshift({ role: "system", content: SYSTEM_PROMPT });
-		}
+    const message =
+      typeof body?.message === "string" ? body.message.trim() : "";
 
-		const inputs = {
-			messages,
-			max_tokens: 1024,
-			stream: true,
-		} satisfies AiTextGenerationInput & { stream: true };
+    if (!message) {
+      return jsonResponse(
+        {
+          ok: false,
+          error: "Please provide a message.",
+        },
+        400
+      );
+    }
 
-		const stream = await env.AI.run<typeof MODEL_ID>(MODEL_ID, inputs, {
-			// Uncomment to use AI Gateway
-			// gateway: {
-			//   id: "YOUR_GATEWAY_ID", // Replace with your AI Gateway ID
-			//   skipCache: false,      // Set to true to bypass cache
-			//   cacheTtl: 3600,        // Cache time-to-live in seconds
-			// },
-		});
+    const history = Array.isArray(body?.history)
+      ? body.history.filter(isChatMessage).slice(-8)
+      : [];
 
-		return new Response(stream, {
-			headers: {
-				"content-type": "text/event-stream; charset=utf-8",
-				"cache-control": "no-cache",
-				connection: "keep-alive",
-			},
-		});
-	} catch (error) {
-		console.error("Error processing chat request:", error);
-		return new Response(
-			JSON.stringify({ error: "Failed to process request" }),
-			{
-				status: 500,
-				headers: { "content-type": "application/json" },
-			},
-		);
-	}
+    const currentDate =
+      typeof body?.currentDate === "string"
+        ? body.currentDate
+        : new Date().toISOString();
+
+    const timezone =
+      typeof body?.timezone === "string" ? body.timezone : "Unknown";
+
+    const result = (await env.AI.run(MODEL_ID, {
+      messages: [
+        {
+          role: "system",
+          content: `${SYSTEM_PROMPT}
+
+Current date and time: ${currentDate}
+User timezone: ${timezone}`,
+        },
+        ...history,
+        {
+          role: "user",
+          content: message,
+        },
+      ],
+      max_tokens: 500,
+      temperature: 0.3,
+    })) as {
+      response?: unknown;
+    };
+
+    const reply =
+      typeof result?.response === "string"
+        ? result.response.trim()
+        : "";
+
+    if (!reply) {
+      return jsonResponse(
+        {
+          ok: false,
+          error: "The AI returned an empty response.",
+        },
+        502
+      );
+    }
+
+    return jsonResponse({
+      ok: true,
+      reply,
+    });
+  } catch (error) {
+    console.error("Kairo AI request failed:", error);
+
+    return jsonResponse(
+      {
+        ok: false,
+        error: "Kairo could not process that request.",
+      },
+      500
+    );
+  }
+}
+
+async function handleTemplateChatRequest(
+  request: Request,
+  env: WorkerEnv
+): Promise<Response> {
+  try {
+    const body = (await request.json()) as {
+      messages?: ChatMessage[];
+    };
+
+    const messages = Array.isArray(body.messages)
+      ? [...body.messages]
+      : [];
+
+    if (!messages.some((message) => message.role === "system")) {
+      messages.unshift({
+        role: "system",
+        content: SYSTEM_PROMPT,
+      });
+    }
+
+    const stream = await env.AI.run(MODEL_ID, {
+      messages,
+      max_tokens: 1024,
+      stream: true,
+    });
+
+    return new Response(stream as BodyInit, {
+      headers: {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
+  } catch (error) {
+    console.error("Template chat request failed:", error);
+
+    return jsonResponse(
+      {
+        error: "Failed to process the chat request.",
+      },
+      500
+    );
+  }
 }
