@@ -33,6 +33,7 @@ Rules:
 - Never say an event was added, created, or saved.
 - Every proposed action must set requiresConfirmation to true.
 - Return a small extraction draft matching the provided JSON Schema. The Worker will build and validate the final action locally.
+- The draft must always include kind, reply, confidence, title, and location. Use an empty string when title or location is unknown.
 
 Examples:
 - "Add to my calendar I have FIFA game Sunday at 3 PM till 4:45 PM" becomes FIFA Game with the upcoming Sunday, 15:00 to 16:45. Do not ask for duration.
@@ -172,6 +173,19 @@ export const reconcileStructuredResponse = (request: StructuredRequest, modelRes
 };
 
 export const runStructuredExtraction = async (env: Env, request: StructuredRequest): Promise<StructuredResponse> => {
+  // Supported calendar language takes a deterministic path so common requests
+  // remain reliable even when JSON Mode is temporarily unavailable. No model
+  // output is trusted or required for this high-confidence local extraction.
+  if (extractEventHints(request.message, request.currentDate, request.timezone).looksLikeEvent) {
+    return reconcileStructuredResponse(request, {
+      kind: "create_event",
+      reply: "Here is the event I prepared.",
+      confidence: 0.98,
+      title: "",
+      location: "",
+    });
+  }
+
   const result = await env.AI.run(STRUCTURED_MODEL_ID, {
     messages: [
       {

@@ -142,8 +142,8 @@ export const modelExtractionSchema = z.object({
   kind: z.enum(["message", "create_event"]),
   reply: safeReplySchema,
   confidence: confidenceSchema,
-  title: z.string().trim().min(1).max(120).optional(),
-  location: z.string().trim().min(1).max(500).optional(),
+  title: z.string().trim().max(120),
+  location: z.string().trim().max(500),
 }).strict();
 
 export type ModelExtraction = z.infer<typeof modelExtractionSchema>;
@@ -158,8 +158,8 @@ export const modelExtractionJsonSchema = {
     kind: { type: "string", enum: ["message", "create_event"] },
     reply: { type: "string", minLength: 1, maxLength: 800 },
     confidence: { type: "number", minimum: 0, maximum: 1 },
-    title: { type: "string", minLength: 1, maxLength: 120 },
-    location: { type: "string", minLength: 1, maxLength: 500 },
+    title: { type: "string", maxLength: 120 },
+    location: { type: "string", maxLength: 500 },
   },
-  required: ["kind", "reply", "confidence"],
+  required: ["kind", "reply", "confidence", "title", "location"],
 } as const;

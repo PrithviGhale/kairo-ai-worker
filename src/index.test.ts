@@ -8,18 +8,20 @@ import type { Env } from "./types";
 const currentDate = "2026-07-17T14:00:00.000Z";
 const timezone = "America/New_York";
 
-const messageCandidate = { kind: "message", reply: "I am ready to help.", confidence: 0.9 };
+const messageCandidate = { kind: "message", reply: "I am ready to help.", confidence: 0.9, title: "", location: "" };
 const proposedCandidate = {
   kind: "create_event",
   reply: "Here is the event I prepared.",
   confidence: 0.95,
   title: "FIFA Game",
+  location: "",
 };
 const followUpCandidate = {
   kind: "create_event",
   reply: "What information is missing?",
   confidence: 0.85,
   title: "FIFA Game",
+  location: "",
 };
 
 const environment = (response: unknown) => {
@@ -63,10 +65,12 @@ describe("Worker routes", () => {
 
 describe("structured endpoint", () => {
   it("returns a normal validated message for non-calendar input", async () => {
-    const { env } = environment(messageCandidate);
+    const { env, run } = environment(messageCandidate);
     const response = await worker.fetch(request("/api/kairo-structured", structuredBody("Hello")), env);
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ ok: true, type: "message", reply: messageCandidate.reply });
+    expect(run.mock.calls[0][0]).toBe(STRUCTURED_MODEL_ID);
+    expect((run.mock.calls[0][1] as Record<string, unknown>).response_format).toMatchObject({ type: "json_schema" });
   });
 
   it("returns a complete FIFA proposed action with the correct range", async () => {
@@ -82,8 +86,7 @@ describe("structured endpoint", () => {
       originalMessage: "Add to my calendar I have FIFA game Sunday at 3 PM till 4:45 PM",
       data: { title: "FIFA Game", date: "2026-07-19", startTime: "15:00", endTime: "16:45" },
     });
-    expect(run.mock.calls[0][0]).toBe(STRUCTURED_MODEL_ID);
-    expect((run.mock.calls[0][1] as Record<string, unknown>).response_format).toMatchObject({ type: "json_schema" });
+    expect(run).not.toHaveBeenCalled();
   });
 
   it("returns a date follow-up while preserving the supplied time range", async () => {
@@ -158,7 +161,7 @@ describe("structured endpoint", () => {
     ["persistence claim", { ...proposedCandidate, reply: "I added the event to your calendar." }],
   ])("rejects %s", async (_name, candidate) => {
     const { env } = environment(candidate);
-    const response = await worker.fetch(request("/api/kairo-structured", structuredBody("Add FIFA game Sunday from 3 PM to 4:45 PM")), env);
+    const response = await worker.fetch(request("/api/kairo-structured", structuredBody("Hello")), env);
     expect(response.status).toBe(502);
     await expect(response.json()).resolves.toEqual({ ok: false, error: "Kairo could not safely interpret that calendar request." });
   });
