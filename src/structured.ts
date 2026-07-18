@@ -11,7 +11,7 @@ import {
 } from "./schemas";
 import type { Env } from "./types";
 
-export const STRUCTURED_MODEL_ID = "@cf/meta/llama-3.1-8b-instruct";
+export const STRUCTURED_MODEL_ID = "@cf/meta/llama-3.1-8b-instruct-fast";
 
 const STRUCTURED_SYSTEM_PROMPT = `
 You are Kairo's calendar-event interpretation service. This endpoint only interprets proposed create_event actions; it never saves data.
