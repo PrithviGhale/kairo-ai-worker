@@ -114,7 +114,14 @@ export async function handleStructuredRequest(request: Request, env: Env): Promi
     return jsonResponse(result);
   } catch (error) {
     if (error instanceof RequestError) return jsonResponse({ ok: false, error: error.message }, error.status);
-    console.error("Kairo structured request failed:", error instanceof Error ? error.name : "UnknownError");
+    const category = error instanceof Error ? error.message : "UNKNOWN_ERROR";
+    console.error("Kairo structured request failed:", category);
+    if (category === "MODEL_RUN_FAILED") {
+      return jsonResponse({ ok: false, error: "The structured AI service is temporarily unavailable." }, 502);
+    }
+    if (category === "MODEL_JSON_INVALID" || category === "MODEL_RESPONSE_INVALID") {
+      return jsonResponse({ ok: false, error: "Kairo received an invalid structured response." }, 502);
+    }
     return jsonResponse({ ok: false, error: "Kairo could not safely interpret that calendar request." }, 502);
   }
 }

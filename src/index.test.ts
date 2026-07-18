@@ -154,16 +154,24 @@ describe("structured endpoint", () => {
   });
 
   it.each([
-    ["invalid model JSON", "{not json"],
-    ["unknown action", { ...proposedCandidate, kind: "delete_event" }],
-    ["unexpected database fields", { ...proposedCandidate, databaseId: "should-not-pass" }],
-    ["invalid confidence", { ...proposedCandidate, confidence: 1.5 }],
-    ["persistence claim", { ...proposedCandidate, reply: "I added the event to your calendar." }],
-  ])("rejects %s", async (_name, candidate) => {
+    ["invalid model JSON", "{not json", "Kairo received an invalid structured response."],
+    ["unknown action", { ...proposedCandidate, kind: "delete_event" }, "Kairo received an invalid structured response."],
+    ["unexpected database fields", { ...proposedCandidate, databaseId: "should-not-pass" }, "Kairo received an invalid structured response."],
+    ["invalid confidence", { ...proposedCandidate, confidence: 1.5 }, "Kairo received an invalid structured response."],
+    ["persistence claim", { ...proposedCandidate, reply: "I added the event to your calendar." }, "Kairo received an invalid structured response."],
+  ])("rejects %s", async (_name, candidate, expectedError) => {
     const { env } = environment(candidate);
     const response = await worker.fetch(request("/api/kairo-structured", structuredBody("Hello")), env);
     expect(response.status).toBe(502);
-    await expect(response.json()).resolves.toEqual({ ok: false, error: "Kairo could not safely interpret that calendar request." });
+    await expect(response.json()).resolves.toEqual({ ok: false, error: expectedError });
+  });
+
+  it("returns a safe service error when Workers AI generation fails", async () => {
+    const run = vi.fn(async () => { throw new Error("provider details must not leak"); });
+    const env: Env = { AI: { run }, ASSETS: { fetch: vi.fn(async () => new Response("asset")) } };
+    const response = await worker.fetch(request("/api/kairo-structured", structuredBody("Hello")), env);
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toEqual({ ok: false, error: "The structured AI service is temporarily unavailable." });
   });
 
   it("strictly rejects invalid dates and time ranges in final actions", () => {

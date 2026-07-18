@@ -186,21 +186,26 @@ export const runStructuredExtraction = async (env: Env, request: StructuredReque
     });
   }
 
-  const result = await env.AI.run(STRUCTURED_MODEL_ID, {
-    messages: [
-      {
-        role: "system",
-        content: `${STRUCTURED_SYSTEM_PROMPT}\n\nCurrent date and time: ${request.currentDate}\nUser timezone: ${request.timezone}`,
+  let result: unknown;
+  try {
+    result = await env.AI.run(STRUCTURED_MODEL_ID, {
+      messages: [
+        {
+          role: "system",
+          content: `${STRUCTURED_SYSTEM_PROMPT}\n\nCurrent date and time: ${request.currentDate}\nUser timezone: ${request.timezone}`,
+        },
+        ...request.history,
+        { role: "user", content: request.message },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: modelExtractionJsonSchema,
       },
-      ...request.history,
-      { role: "user", content: request.message },
-    ],
-    response_format: {
-      type: "json_schema",
-      json_schema: modelExtractionJsonSchema,
-    },
-    max_tokens: 700,
-    temperature: 0,
-  });
+      max_tokens: 700,
+      temperature: 0,
+    });
+  } catch {
+    throw new Error("MODEL_RUN_FAILED");
+  }
   return reconcileStructuredResponse(request, parseModelResponse(result));
 };
