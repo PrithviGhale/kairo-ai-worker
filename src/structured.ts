@@ -1,11 +1,13 @@
 import { extractEventHints } from "./calendar";
 import {
-  structuredResponseJsonSchema,
+  modelExtractionJsonSchema,
+  modelExtractionSchema,
   structuredResponseSchema,
   type FollowUpResponse,
   type ProposedActionResponse,
   type StructuredRequest,
   type StructuredResponse,
+  type ModelExtraction,
 } from "./schemas";
 import type { Env } from "./types";
 
@@ -30,14 +32,14 @@ Rules:
 - Do not invent locations, people, reminders, descriptions, or details.
 - Never say an event was added, created, or saved.
 - Every proposed action must set requiresConfirmation to true.
-- Only return data matching the provided JSON Schema.
+- Return a small extraction draft matching the provided JSON Schema. The Worker will build and validate the final action locally.
 
 Examples:
 - "Add to my calendar I have FIFA game Sunday at 3 PM till 4:45 PM" becomes FIFA Game with the upcoming Sunday, 15:00 to 16:45. Do not ask for duration.
 - "3 to 4:45" requires an AM-or-PM follow-up.
 `.trim();
 
-const parseModelResponse = (result: unknown): StructuredResponse => {
+const parseModelResponse = (result: unknown): ModelExtraction => {
   const response = result && typeof result === "object" ? (result as { response?: unknown }).response : undefined;
   let candidate = response;
   if (typeof candidate === "string") {
@@ -47,15 +49,9 @@ const parseModelResponse = (result: unknown): StructuredResponse => {
       throw new Error("MODEL_JSON_INVALID");
     }
   }
-  const parsed = structuredResponseSchema.safeParse(candidate);
+  const parsed = modelExtractionSchema.safeParse(candidate);
   if (!parsed.success) throw new Error("MODEL_RESPONSE_INVALID");
   return parsed.data;
-};
-
-const candidateData = (response: StructuredResponse) => {
-  if (response.type === "proposed_action") return { data: response.action.data, confidence: response.action.confidence };
-  if (response.type === "follow_up") return { data: response.pendingAction.collectedData, confidence: response.pendingAction.confidence };
-  return { data: {}, confidence: 0.75 };
 };
 
 const mentionedNullableValue = (message: string, value: string | null | undefined) => value && message.toLowerCase().includes(value.toLowerCase()) ? value : null;
@@ -98,16 +94,18 @@ const proposedActionResponse = (response: ProposedActionResponse) => {
   return parsed.data;
 };
 
-export const reconcileStructuredResponse = (request: StructuredRequest, modelResponse: StructuredResponse): StructuredResponse => {
+export const reconcileStructuredResponse = (request: StructuredRequest, modelResponse: ModelExtraction): StructuredResponse => {
   const hints = extractEventHints(request.message, request.currentDate, request.timezone);
-  if (!hints.looksLikeEvent && modelResponse.type === "message") return modelResponse;
+  if (!hints.looksLikeEvent && modelResponse.kind === "message") {
+    const parsedMessage = structuredResponseSchema.safeParse({ ok: true, type: "message", reply: modelResponse.reply });
+    if (!parsedMessage.success) throw new Error("SAFE_RESPONSE_INVALID");
+    return parsedMessage.data;
+  }
 
-  const model = candidateData(modelResponse);
-  const modelData = model.data;
-  const confidence = Math.min(model.confidence, hints.invalid ? 0.4 : 0.98);
-  const title = hints.title ?? ("title" in modelData && modelTitleIsGrounded(request.message, modelData.title) ? modelData.title : undefined);
+  const confidence = Math.min(modelResponse.confidence, hints.invalid ? 0.4 : 0.98);
+  const title = hints.title ?? (modelTitleIsGrounded(request.message, modelResponse.title) ? modelResponse.title : undefined);
   const date = hints.hasDateExpression ? hints.date : undefined;
-  const location = "location" in modelData ? mentionedNullableValue(request.message, modelData.location) : null;
+  const location = mentionedNullableValue(request.message, modelResponse.location);
   const baseCollected = {
     ...(title ? { title } : {}),
     ...(date ? { date } : {}),
@@ -185,7 +183,7 @@ export const runStructuredExtraction = async (env: Env, request: StructuredReque
     ],
     response_format: {
       type: "json_schema",
-      json_schema: structuredResponseJsonSchema,
+      json_schema: modelExtractionJsonSchema,
     },
     max_tokens: 700,
     temperature: 0,

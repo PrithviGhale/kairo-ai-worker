@@ -1,47 +1,25 @@
 import { describe, expect, it, vi } from "vitest";
 
 import worker from "./index";
-import { MAX_REQUEST_BYTES } from "./schemas";
+import { MAX_REQUEST_BYTES, proposedActionResponseSchema } from "./schemas";
 import { STRUCTURED_MODEL_ID } from "./structured";
 import type { Env } from "./types";
 
 const currentDate = "2026-07-17T14:00:00.000Z";
 const timezone = "America/New_York";
 
-const messageCandidate = { ok: true, type: "message", reply: "I am ready to help." };
+const messageCandidate = { kind: "message", reply: "I am ready to help.", confidence: 0.9 };
 const proposedCandidate = {
-  ok: true,
-  type: "proposed_action",
+  kind: "create_event",
   reply: "Here is the event I prepared.",
-  action: {
-    action: "create_event",
-    requiresConfirmation: true,
-    confidence: 0.95,
-    originalMessage: "placeholder",
-    data: {
-      title: "FIFA Game",
-      date: "2026-07-19",
-      startTime: "15:00",
-      endTime: "16:45",
-      allDay: false,
-      crossesMidnight: false,
-      location: null,
-      reminderMinutesBefore: null,
-      description: null,
-    },
-  },
+  confidence: 0.95,
+  title: "FIFA Game",
 };
 const followUpCandidate = {
-  ok: true,
-  type: "follow_up",
+  kind: "create_event",
   reply: "What information is missing?",
-  pendingAction: {
-    action: "create_event",
-    originalMessage: "placeholder",
-    collectedData: { title: "FIFA Game" },
-    missingFields: ["date"],
-    confidence: 0.85,
-  },
+  confidence: 0.85,
+  title: "FIFA Game",
 };
 
 const environment = (response: unknown) => {
@@ -88,14 +66,14 @@ describe("structured endpoint", () => {
     const { env } = environment(messageCandidate);
     const response = await worker.fetch(request("/api/kairo-structured", structuredBody("Hello")), env);
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual(messageCandidate);
+    await expect(response.json()).resolves.toEqual({ ok: true, type: "message", reply: messageCandidate.reply });
   });
 
   it("returns a complete FIFA proposed action with the correct range", async () => {
     const { env, run } = environment(proposedCandidate);
     const response = await worker.fetch(request("/api/kairo-structured", structuredBody("Add to my calendar I have FIFA game Sunday at 3 PM till 4:45 PM")), env);
     expect(response.status).toBe(200);
-    const json = await response.json() as typeof proposedCandidate;
+    const json = await response.json() as { type: string; reply: string; action: Record<string, unknown> };
     expect(json.type).toBe("proposed_action");
     expect(json.reply.toLowerCase()).not.toContain("how long");
     expect(json.action).toMatchObject({
@@ -174,14 +152,43 @@ describe("structured endpoint", () => {
 
   it.each([
     ["invalid model JSON", "{not json"],
-    ["unknown action", { ...proposedCandidate, action: { ...proposedCandidate.action, action: "delete_event" } }],
-    ["invalid date", { ...proposedCandidate, action: { ...proposedCandidate.action, data: { ...proposedCandidate.action.data, date: "2026-02-30" } } }],
-    ["invalid range", { ...proposedCandidate, action: { ...proposedCandidate.action, data: { ...proposedCandidate.action.data, startTime: "17:00", endTime: "16:00" } } }],
+    ["unknown action", { ...proposedCandidate, kind: "delete_event" }],
+    ["unexpected database fields", { ...proposedCandidate, databaseId: "should-not-pass" }],
+    ["invalid confidence", { ...proposedCandidate, confidence: 1.5 }],
     ["persistence claim", { ...proposedCandidate, reply: "I added the event to your calendar." }],
   ])("rejects %s", async (_name, candidate) => {
     const { env } = environment(candidate);
     const response = await worker.fetch(request("/api/kairo-structured", structuredBody("Add FIFA game Sunday from 3 PM to 4:45 PM")), env);
     expect(response.status).toBe(502);
     await expect(response.json()).resolves.toEqual({ ok: false, error: "Kairo could not safely interpret that calendar request." });
+  });
+
+  it("strictly rejects invalid dates and time ranges in final actions", () => {
+    const validAction = {
+      ok: true,
+      type: "proposed_action",
+      reply: "Here is the event I prepared for your confirmation.",
+      action: {
+        action: "create_event",
+        requiresConfirmation: true,
+        confidence: 0.9,
+        originalMessage: "Add the FIFA game",
+        data: {
+          title: "FIFA Game",
+          date: "2026-07-19",
+          startTime: "15:00",
+          endTime: "16:45",
+          allDay: false,
+          crossesMidnight: false,
+          location: null,
+          reminderMinutesBefore: null,
+          description: null,
+        },
+      },
+    };
+    const invalidDate = { ...validAction, action: { ...validAction.action, data: { ...validAction.action.data, date: "2026-02-30" } } };
+    const invalidRange = { ...validAction, action: { ...validAction.action, data: { ...validAction.action.data, startTime: "17:00", endTime: "16:00" } } };
+    expect(proposedActionResponseSchema.safeParse(invalidDate).success).toBe(false);
+    expect(proposedActionResponseSchema.safeParse(invalidRange).success).toBe(false);
   });
 });

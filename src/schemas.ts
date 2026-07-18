@@ -138,95 +138,28 @@ export type StructuredResponse = z.infer<typeof structuredResponseSchema>;
 export type FollowUpResponse = z.infer<typeof followUpResponseSchema>;
 export type ProposedActionResponse = z.infer<typeof proposedActionResponseSchema>;
 
-export const structuredResponseJsonSchema = {
-  oneOf: [
-    {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        ok: { const: true },
-        type: { const: "message" },
-        reply: { type: "string", minLength: 1, maxLength: 800 },
-      },
-      required: ["ok", "type", "reply"],
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        ok: { const: true },
-        type: { const: "follow_up" },
-        reply: { type: "string", minLength: 1, maxLength: 800 },
-        pendingAction: {
-          type: "object",
-          additionalProperties: false,
-          properties: {
-            action: { const: "create_event" },
-            originalMessage: { type: "string", minLength: 1, maxLength: MAX_MESSAGE_LENGTH },
-            collectedData: {
-              type: "object",
-              additionalProperties: false,
-              properties: {
-                title: { type: "string", minLength: 1, maxLength: 120 },
-                date: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
-                startTime: { type: "string", pattern: "^(?:[01]\\d|2[0-3]):[0-5]\\d$" },
-                endTime: { type: "string", pattern: "^(?:[01]\\d|2[0-3]):[0-5]\\d$" },
-                allDay: { type: "boolean" },
-                crossesMidnight: { type: "boolean" },
-                location: { type: ["string", "null"] },
-                reminderMinutesBefore: { type: ["integer", "null"], minimum: 0 },
-                description: { type: ["string", "null"] },
-                durationMinutes: { type: "integer", minimum: 1, maximum: 720 },
-              },
-            },
-            missingFields: {
-              type: "array",
-              minItems: 1,
-              items: { enum: ["title", "date", "startTimeOrAllDay", "endTimeOrDuration", "timeMeridiem"] },
-            },
-            confidence: { type: "number", minimum: 0, maximum: 1 },
-          },
-          required: ["action", "originalMessage", "collectedData", "missingFields", "confidence"],
-        },
-      },
-      required: ["ok", "type", "reply", "pendingAction"],
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        ok: { const: true },
-        type: { const: "proposed_action" },
-        reply: { type: "string", minLength: 1, maxLength: 800 },
-        action: {
-          type: "object",
-          additionalProperties: false,
-          properties: {
-            action: { const: "create_event" },
-            requiresConfirmation: { const: true },
-            confidence: { type: "number", minimum: 0, maximum: 1 },
-            originalMessage: { type: "string", minLength: 1, maxLength: MAX_MESSAGE_LENGTH },
-            data: {
-              type: "object",
-              additionalProperties: false,
-              properties: {
-                title: { type: "string", minLength: 1, maxLength: 120 },
-                date: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
-                startTime: { type: ["string", "null"], pattern: "^(?:[01]\\d|2[0-3]):[0-5]\\d$" },
-                endTime: { type: ["string", "null"], pattern: "^(?:[01]\\d|2[0-3]):[0-5]\\d$" },
-                allDay: { type: "boolean" },
-                crossesMidnight: { type: "boolean" },
-                location: { type: ["string", "null"] },
-                reminderMinutesBefore: { type: ["integer", "null"], minimum: 0 },
-                description: { type: ["string", "null"] },
-              },
-              required: ["title", "date", "startTime", "endTime", "allDay", "crossesMidnight", "location", "reminderMinutesBefore", "description"],
-            },
-          },
-          required: ["action", "requiresConfirmation", "confidence", "originalMessage", "data"],
-        },
-      },
-      required: ["ok", "type", "reply", "action"],
-    },
-  ],
+export const modelExtractionSchema = z.object({
+  kind: z.enum(["message", "create_event"]),
+  reply: safeReplySchema,
+  confidence: confidenceSchema,
+  title: z.string().trim().min(1).max(120).optional(),
+  location: z.string().trim().min(1).max(500).optional(),
+}).strict();
+
+export type ModelExtraction = z.infer<typeof modelExtractionSchema>;
+
+// Keep the generation schema deliberately simple. Cloudflare notes that JSON
+// Mode can reject overly complex schemas; the full discriminated response is
+// built and strictly validated locally after this model draft is received.
+export const modelExtractionJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    kind: { type: "string", enum: ["message", "create_event"] },
+    reply: { type: "string", minLength: 1, maxLength: 800 },
+    confidence: { type: "number", minimum: 0, maximum: 1 },
+    title: { type: "string", minLength: 1, maxLength: 120 },
+    location: { type: "string", minLength: 1, maxLength: 500 },
+  },
+  required: ["kind", "reply", "confidence"],
 } as const;
