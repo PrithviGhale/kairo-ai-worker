@@ -73,6 +73,16 @@ describe("structured endpoint", () => {
     expect((run.mock.calls[0][1] as Record<string, unknown>).response_format).toMatchObject({ type: "json_schema" });
   });
 
+  it("does not let a model misclassify a greeting as a calendar action", async () => {
+    const { env } = environment({ ...proposedCandidate, title: "Hello", confidence: 0 });
+    const response = await worker.fetch(request("/api/kairo-structured", structuredBody("Hello")), env);
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      type: "message",
+      reply: "I can help when you are ready to plan a calendar event.",
+    });
+  });
+
   it("returns a complete FIFA proposed action with the correct range", async () => {
     const { env, run } = environment(proposedCandidate);
     const response = await worker.fetch(request("/api/kairo-structured", structuredBody("Add to my calendar I have FIFA game Sunday at 3 PM till 4:45 PM")), env);

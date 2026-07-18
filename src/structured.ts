@@ -97,8 +97,11 @@ const proposedActionResponse = (response: ProposedActionResponse) => {
 
 export const reconcileStructuredResponse = (request: StructuredRequest, modelResponse: ModelExtraction): StructuredResponse => {
   const hints = extractEventHints(request.message, request.currentDate, request.timezone);
-  if (!hints.looksLikeEvent && modelResponse.kind === "message") {
-    const parsedMessage = structuredResponseSchema.safeParse({ ok: true, type: "message", reply: modelResponse.reply });
+  if (!hints.looksLikeEvent && !hints.hasDateExpression && !hints.hasTimeExpression) {
+    const reply = modelResponse.kind === "message"
+      ? modelResponse.reply
+      : "I can help when you are ready to plan a calendar event.";
+    const parsedMessage = structuredResponseSchema.safeParse({ ok: true, type: "message", reply });
     if (!parsedMessage.success) throw new Error("SAFE_RESPONSE_INVALID");
     return parsedMessage.data;
   }
