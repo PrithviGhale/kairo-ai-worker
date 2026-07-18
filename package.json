@@ -1,6 +1,6 @@
 {
 	"name": "kairo",
-	"description": "A simple chat application powered by Cloudflare Workers AI",
+	"description": "Cloudflare Workers AI backend for Kairo conversation and safe calendar extraction",
 	"cloudflare": {
 		"label": "LLM Chat App",
 		"products": [
@@ -33,6 +33,9 @@
 		"deploy": "wrangler deploy",
 		"dev": "wrangler dev",
 		"start": "wrangler dev",
-		"test": "vitest"
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"zod": "^4.4.3"
 	}
 }

@@ -1,153 +1,76 @@
-# LLM Chat Application Template
+# Kairo AI Worker
 
-A simple, ready-to-deploy chat application template powered by Cloudflare Workers AI. This template provides a clean starting point for building AI chat applications with streaming responses.
+Cloudflare Workers AI backend for Kairo. It preserves the conversational API and adds a strictly validated calendar-extraction API that can propose—but never persist—an event.
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/templates/tree/main/llm-chat-app-template)
+## Routes
 
-<!-- dash-content-start -->
+- `GET /health` reports service readiness.
+- `POST /api/kairo` returns a conversational `{ "ok": true, "reply": "..." }` response.
+- `POST /api/kairo-structured` interprets a possible calendar event and returns a `message`, `follow_up`, or `proposed_action` response.
+- `POST /api/chat` powers the included streaming sample application.
+- Static files under `public/` are served through the existing `ASSETS` binding.
 
-## Demo
+`OPTIONS` requests are supported for Expo development.
 
-This template demonstrates how to build an AI-powered chat interface using Cloudflare Workers AI with streaming responses. It features:
+## Structured calendar API
 
-- Real-time streaming of AI responses using Server-Sent Events (SSE)
-- Easy customization of models and system prompts
-- Support for AI Gateway integration
-- Clean, responsive UI that works on mobile and desktop
+Example request:
 
-## Features
+```json
+{
+  "message": "Add to my calendar I have FIFA game Sunday at 3 PM till 4:45 PM",
+  "history": [],
+  "currentDate": "2026-07-17T14:00:00.000Z",
+  "timezone": "America/New_York"
+}
+```
 
-- 💬 Simple and responsive chat interface
-- ⚡ Server-Sent Events (SSE) for streaming responses
-- 🧠 Powered by Cloudflare Workers AI LLMs
-- 🛠️ Built with TypeScript and Cloudflare Workers
-- 📱 Mobile-friendly design
-- 🔄 Maintains chat history on the client
-- 🔎 Built-in Observability logging
-<!-- dash-content-end -->
+The endpoint uses the supplied date and IANA timezone to resolve relative dates. It repairs common time punctuation, understands time ranges and durations, cleans event titles, and asks a focused follow-up when a date, time, title, duration, or AM/PM period is genuinely unclear.
 
-## Getting Started
+Successful structured responses are one of:
 
-### Prerequisites
+- `message` for a non-calendar response;
+- `follow_up` with a locally resumable `create_event` proposal;
+- `proposed_action` with `requiresConfirmation: true`.
 
-- [Node.js](https://nodejs.org/) (v18 or newer)
-- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/)
-- A Cloudflare account with Workers AI access
+Only `create_event` is allowed. All model output is checked against a strict JSON Schema during generation and validated again with Zod before it can be returned. The Worker does not connect to the mobile database and cannot save an event.
 
-### Installation
+## Development
 
-1. Clone this repository:
-
-   ```bash
-   git clone https://github.com/cloudflare/templates.git
-   cd templates/llm-chat-app
-   ```
-
-2. Install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-3. Generate Worker type definitions:
-   ```bash
-   npm run cf-typegen
-   ```
-
-### Development
-
-Start a local development server:
+Requirements: Node.js 18 or newer, a Cloudflare account, and Workers AI access.
 
 ```bash
+npm install
 npm run dev
 ```
 
-This will start a local server at http://localhost:8787.
+Useful commands:
 
-Note: Using Workers AI accesses your Cloudflare account even during local development, which will incur usage charges.
+```bash
+npm test
+npm run check
+npx wrangler deploy --dry-run
+```
 
-### Deployment
-
-Deploy to Cloudflare Workers:
+Deploy intentionally with:
 
 ```bash
 npm run deploy
 ```
 
-### Monitor
+The bindings and compatibility settings are defined in `wrangler.jsonc`:
 
-View real-time logs associated with any deployed Worker:
+- `AI`: Workers AI binding
+- `ASSETS`: static assets in `public/`
 
-```bash
-npm wrangler tail
-```
+## Safety and limits
 
-## Project Structure
+- JSON requests only, with a 32 KiB body limit.
+- Messages are capped at 2,000 characters.
+- At most the latest eight valid history messages are accepted.
+- Unsupported methods and malformed inputs are rejected before an AI call.
+- Responses reject unknown actions, extra fields, invalid dates or times, unsafe ranges, and persistence claims.
+- Logs contain error categories, not full private conversations.
+- CORS is open for Expo development and responses are not cached.
 
-```
-/
-├── public/             # Static assets
-│   ├── index.html      # Chat UI HTML
-│   └── chat.js         # Chat UI frontend script
-├── src/
-│   ├── index.ts        # Main Worker entry point
-│   └── types.ts        # TypeScript type definitions
-├── test/               # Test files
-├── wrangler.jsonc      # Cloudflare Worker configuration
-├── tsconfig.json       # TypeScript configuration
-└── README.md           # This documentation
-```
-
-## How It Works
-
-### Backend
-
-The backend is built with Cloudflare Workers and uses the Workers AI platform to generate responses. The main components are:
-
-1. **API Endpoint** (`/api/chat`): Accepts POST requests with chat messages and streams responses
-2. **Streaming**: Uses Server-Sent Events (SSE) for real-time streaming of AI responses
-3. **Workers AI Binding**: Connects to Cloudflare's AI service via the Workers AI binding
-
-### Frontend
-
-The frontend is a simple HTML/CSS/JavaScript application that:
-
-1. Presents a chat interface
-2. Sends user messages to the API
-3. Processes streaming responses in real-time
-4. Maintains chat history on the client side
-
-## Customization
-
-### Changing the Model
-
-To use a different AI model, update the `MODEL_ID` constant in `src/index.ts`. You can find available models in the [Cloudflare Workers AI documentation](https://developers.cloudflare.com/workers-ai/models/).
-
-### Using AI Gateway
-
-The template includes commented code for AI Gateway integration, which provides additional capabilities like rate limiting, caching, and analytics.
-
-To enable AI Gateway:
-
-1. [Create an AI Gateway](https://dash.cloudflare.com/?to=/:account/ai/ai-gateway) in your Cloudflare dashboard
-2. Uncomment the gateway configuration in `src/index.ts`
-3. Replace `YOUR_GATEWAY_ID` with your actual AI Gateway ID
-4. Configure other gateway options as needed:
-   - `skipCache`: Set to `true` to bypass gateway caching
-   - `cacheTtl`: Set the cache time-to-live in seconds
-
-Learn more about [AI Gateway](https://developers.cloudflare.com/ai-gateway/).
-
-### Modifying the System Prompt
-
-The default system prompt can be changed by updating the `SYSTEM_PROMPT` constant in `src/index.ts`.
-
-### Styling
-
-The UI styling is contained in the `<style>` section of `public/index.html`. You can modify the CSS variables at the top to quickly change the color scheme.
-
-## Resources
-
-- [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
-- [Cloudflare Workers AI Documentation](https://developers.cloudflare.com/workers-ai/)
-- [Workers AI Models](https://developers.cloudflare.com/workers-ai/models/)
+The endpoint is public during development. A production deployment still needs durable authentication, platform-level rate limiting, quota monitoring, and stricter origin policy. The Worker URL is not a secret and no credentials belong in this repository or in the mobile application.
