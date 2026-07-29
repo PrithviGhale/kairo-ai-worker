@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import worker from "./index";
-import { ASSISTANT_TOOLS, extractToolCalls, processAssistantModelResult } from "./assistant-v2";
+import { ASSISTANT_TOOLS, extractToolCalls, isCalendarDeletionIntent, processAssistantModelResult } from "./assistant-v2";
 import { ASSISTANT_V2_MODEL_ID, assistantV2RequestSchema, assistantV2ResponseSchema } from "./assistant-v2-schemas";
 import { MAX_REQUEST_BYTES } from "./schemas";
 import type { Env } from "./types";
@@ -45,8 +45,90 @@ describe("POST /api/assistant-v2", () => {
     expect(run.mock.calls[0][0]).toBe(ASSISTANT_V2_MODEL_ID);
     expect(run.mock.calls[0][1]).toMatchObject({ tools: ASSISTANT_TOOLS, stream: false, max_tokens: 700 });
     expect(ASSISTANT_TOOLS.map((tool) => tool.function.name)).toEqual([
-      "create_calendar_event", "create_task", "create_savings_goal", "add_goal_contribution", "answer_schedule_question",
+      "create_calendar_event", "delete_calendar_event", "create_task", "create_savings_goal", "add_goal_contribution", "answer_schedule_question",
     ]);
+  });
+
+  it("requests exact local data for next week without calling AI", async () => {
+    const { env, run } = environment({ response: "This must not be used." });
+    const response = await worker.fetch(request(body("What does my schedule look like next week?")), env);
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      type: "tool_call",
+      reply: "I’ll check that schedule.",
+      toolCall: {
+        name: "answer_schedule_question",
+        requiresConfirmation: false,
+        arguments: {
+          questionType: "weekly_overview",
+          startDate: "2026-08-03",
+          endDate: "2026-08-09",
+          rangeLabel: "next week",
+          includeEvents: true,
+          includeTasks: true,
+          includeGoalDeadlines: true,
+          includeCompletedTasks: false,
+        },
+      },
+    });
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("accepts a validated schedule tool result and returns a grounded normal message", async () => {
+    const toolResult = {
+      name: "answer_schedule_question",
+      range: { startDate: "2026-08-03", endDate: "2026-08-09", rangeLabel: "next week" },
+      events: [{ title: "Dentist Appointment", date: "2026-08-04", startTime: "14:00", endTime: "15:00", allDay: false, location: null }],
+      tasks: [{ title: "Complete Database Assignment", dueDate: "2026-08-06", dueTime: "20:00", priority: "high", estimatedMinutes: 180, completed: false }],
+      goalDeadlines: [],
+    };
+    const { env, run } = environment({ response: "This must not be used." });
+    const response = await worker.fetch(request(body("What does my schedule look like next week?", { toolResult })), env);
+    const json = await response.json() as Record<string, unknown>;
+    expect(json).toMatchObject({ ok: true, type: "message" });
+    expect(json.reply).toContain("Schedule: August 3, 2026 through August 9, 2026");
+    expect(json.reply).toContain("Dentist Appointment");
+    expect(json.reply).toContain("Complete Database Assignment");
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("keeps a data-changing follow-up on a confirmation-required tool", async () => {
+    const args = event({ title: "Gym", date: "2026-08-04", startTime: "18:00", endTime: "19:00", crossesMidnight: false });
+    const { env } = environment(call("create_calendar_event", args));
+    const response = await worker.fetch(request(body("Add gym Tuesday at 6 PM for one hour.", {
+      history: [
+        { role: "user", content: "What does my schedule look like next week?" },
+        { role: "assistant", content: "Schedule: August 3, 2026 through August 9, 2026" },
+      ],
+    })), env);
+    const json = await response.json() as Record<string, any>;
+    expect(json.toolCall).toMatchObject({ name: "create_calendar_event", requiresConfirmation: true, arguments: { title: "Gym" } });
+  });
+
+  it("grounds a bare weekday action in the previously summarized schedule week", async () => {
+    const args = event({ title: "Gym", date: "2026-07-31", startTime: "18:00", endTime: "19:00", crossesMidnight: false });
+    const { env } = environment(call("create_calendar_event", args));
+    const response = await worker.fetch(request(body("Add gym Friday at 6 PM for one hour.", {
+      history: [
+        { role: "user", content: "What does my schedule look like next week?" },
+        { role: "assistant", content: "Schedule: August 3, 2026 through August 9, 2026" },
+      ],
+    })), env);
+    const json = await response.json() as Record<string, any>;
+    expect(json.toolCall).toMatchObject({ name: "create_calendar_event", requiresConfirmation: true, arguments: { title: "Gym", date: "2026-08-07" } });
+  });
+
+  it("rejects an invalid or excessive schedule tool result at the request boundary", async () => {
+    const invalidToolResult = {
+      name: "answer_schedule_question",
+      range: { startDate: "2026-01-01", endDate: "2026-05-01", rangeLabel: "too long" },
+      events: [{ title: "Private Event", date: "2026-01-02", startTime: null, endTime: null, allDay: true, location: null, databaseId: "private" }],
+      tasks: [], goalDeadlines: [],
+    };
+    const { env } = environment({ response: "unused" });
+    const response = await worker.fetch(request(body("What is on my schedule?", { toolResult: invalidToolResult })), env);
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ ok: false, error: "Please provide a valid assistant request." });
   });
 
   it("proposes the BTS Concert overnight event without an unnecessary follow-up", async () => {
@@ -144,6 +226,75 @@ describe("POST /api/assistant-v2", () => {
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toEqual({ ok: false, error: "Kairo's free AI allowance is temporarily exhausted. Please try again later." });
   });
+
+  it("returns an ID-free confirmation-required calendar deletion proposal", async () => {
+    const args = { eventReference: { title: "BTS Concert", date: "2026-08-06", startTime: "20:00", endTime: "00:00", location: null }, reason: "not_attending" };
+    const { env } = environment(call("delete_calendar_event", args));
+    const response = await worker.fetch(request(body("I'm not going to the BTS concert anymore.")), env);
+    const json = await response.json() as Record<string, any>;
+    expect(json).toEqual({ ok: true, type: "tool_call", reply: "I found the event you want to remove. Please confirm before it is deleted.", toolCall: { name: "delete_calendar_event", requiresConfirmation: true, arguments: args } });
+    expect(JSON.stringify(json)).not.toMatch(/eventId|databaseId|repositoryId|rowId/);
+  });
+
+  it("resolves a contextual deletion reference from one relevant local event", () => {
+    const parsed = assistantV2RequestSchema.parse(body("That got canceled. Remove it.", {
+      appContext: { relevantTasks: [], relevantGoals: [], relevantEvents: [{ title: "Dentist Appointment", startAt: "2026-08-04T18:00:00.000Z", endAt: "2026-08-04T18:30:00.000Z", isAllDay: false }] },
+    }));
+    const result = processAssistantModelResult(parsed, call("delete_calendar_event", { eventReference: { title: "That Event", date: null, startTime: null, endTime: null, location: null }, reason: "canceled" }));
+    expect(result).toMatchObject({ type: "tool_call", toolCall: { name: "delete_calendar_event", requiresConfirmation: true, arguments: { eventReference: { title: "Dentist Appointment", date: "2026-08-04", startTime: "14:00", endTime: "14:30" }, reason: "canceled" } } });
+  });
+
+  it("deterministically cleans cancellation wording and selects the named local event", () => {
+    const parsed = assistantV2RequestSchema.parse(body("My dentist appointment got canceled.", {
+      appContext: { relevantTasks: [], relevantGoals: [], relevantEvents: [
+        { title: "Dentist Appointment", startAt: "2026-08-04T18:00:00.000Z", endAt: "2026-08-04T18:30:00.000Z", isAllDay: false },
+        { title: "Team Sync", startAt: "2026-08-05T19:00:00.000Z", endAt: "2026-08-05T20:00:00.000Z", isAllDay: false },
+      ] },
+    }));
+    const result = processAssistantModelResult(parsed, { response: "I understand." });
+    expect(result).toMatchObject({ type: "tool_call", toolCall: { name: "delete_calendar_event", arguments: { eventReference: { title: "Dentist Appointment", date: "2026-08-04", startTime: "14:00" }, reason: "canceled" } } });
+  });
+
+  it("uses a clock-only contextual reference to select the one matching event", () => {
+    const parsed = assistantV2RequestSchema.parse(body("Take the 3 PM event off my calendar.", {
+      appContext: { relevantTasks: [], relevantGoals: [], relevantEvents: [
+        { title: "Dentist Appointment", startAt: "2026-08-04T18:00:00.000Z", endAt: "2026-08-04T18:30:00.000Z", isAllDay: false },
+        { title: "Team Sync", startAt: "2026-08-04T19:00:00.000Z", endAt: "2026-08-04T20:00:00.000Z", isAllDay: false },
+      ] },
+    }));
+    const result = processAssistantModelResult(parsed, { response: "I understand." });
+    expect(result).toMatchObject({ type: "tool_call", toolCall: { name: "delete_calendar_event", arguments: { eventReference: { title: "Team Sync", startTime: "15:00" }, reason: "user_requested" } } });
+  });
+
+  it("asks for one date or time when multiple saved events match", () => {
+    const parsed = assistantV2RequestSchema.parse(body("Cancel the FIFA game.", {
+      appContext: { relevantTasks: [], relevantGoals: [], relevantEvents: [
+        { title: "FIFA Game", startAt: "2026-08-02T19:00:00.000Z", endAt: "2026-08-02T20:45:00.000Z", isAllDay: false },
+        { title: "FIFA Game", startAt: "2026-08-09T19:00:00.000Z", endAt: "2026-08-09T20:45:00.000Z", isAllDay: false },
+      ] },
+    }));
+    const result = processAssistantModelResult(parsed, call("delete_calendar_event", { eventReference: { title: "FIFA Game", date: null, startTime: null, endTime: null, location: null }, reason: "user_requested" }));
+    expect(result).toMatchObject({ type: "follow_up", reply: "I found more than one matching event. Which date or time should I remove?", pendingAction: { action: "delete_calendar_event", missingFields: ["eventDateOrTime"], collectedData: { eventReference: { title: "FIFA Game" } } } });
+  });
+
+  it.each([
+    ["My dentist appointment got canceled.", true],
+    ["Cancel my dentist appointment Tuesday.", true],
+    ["I'm not going to the BTS concert anymore.", true],
+    ["Remove the FIFA game from my calendar.", true],
+    ["Delete my New York trip.", true],
+    ["I cannot make it to dinner Friday.", true],
+    ["That event was canceled.", true],
+    ["Remove that from my schedule.", true],
+    ["I'm no longer going to it.", true],
+    ["My concert might get canceled.", false],
+    ["What happens if my dentist cancels?", false],
+    ["Never mind", false],
+    ["Cancel this request", false],
+    ["Cancel", false],
+  ])("classifies calendar deletion intent for %s", (message, expected) => {
+    expect(isCalendarDeletionIntent(message)).toBe(expected);
+  });
 });
 
 describe("assistant-v2 strict model response validation", () => {
@@ -155,12 +306,16 @@ describe("assistant-v2 strict model response validation", () => {
     ["invalid date", call("create_calendar_event", event({ date: "2026-02-30" }))],
     ["invalid range", call("create_calendar_event", event({ startTime: "20:00", endTime: "19:00", crossesMidnight: false }))],
     ["non-positive contribution", call("add_goal_contribution", { goalName: "Trip", amount: 0, date: "2026-07-29", note: null })],
+    ["invented deletion ID", call("delete_calendar_event", { eventReference: { title: "BTS Concert", date: "2026-08-06", startTime: "20:00", endTime: "00:00", location: null, eventId: "invented" }, reason: "user_requested" })],
+    ["unsupported full-series deletion", call("delete_calendar_event", { eventReference: { title: "Practice", date: "2026-08-06", startTime: "20:00", endTime: "21:00", location: null }, reason: "user_requested", scope: "series" })],
   ])("rejects %s", (_label, result) => {
     expect(() => processAssistantModelResult(parsedRequest, result)).toThrow("MODEL_RESPONSE_INVALID");
   });
 
   it("rejects conversational mutation claims", () => {
     expect(() => processAssistantModelResult(parsedRequest, { response: "I added the event to your calendar." })).toThrow("MODEL_RESPONSE_INVALID");
+    expect(() => processAssistantModelResult(parsedRequest, { response: "I deleted the event." })).toThrow("MODEL_RESPONSE_INVALID");
+    expect(() => processAssistantModelResult(parsedRequest, { response: "Your event is canceled." })).toThrow("MODEL_RESPONSE_INVALID");
   });
 
   it("creates one follow-up when a required goal amount is missing", () => {

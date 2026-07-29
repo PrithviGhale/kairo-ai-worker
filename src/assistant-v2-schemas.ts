@@ -9,10 +9,13 @@ import {
 } from "./schemas";
 
 export const ASSISTANT_V2_MODEL_ID = "@cf/openai/gpt-oss-120b";
-export const MAX_ASSISTANT_REPLY_LENGTH = 1_200;
+export const MAX_ASSISTANT_REPLY_LENGTH = 6_000;
+export const MAX_SCHEDULE_RANGE_DAYS = 90;
+export const MAX_SCHEDULE_RECORDS = 100;
 
 export const assistantActionSchema = z.enum([
   "create_calendar_event",
+  "delete_calendar_event",
   "create_task",
   "create_savings_goal",
   "add_goal_contribution",
@@ -23,6 +26,78 @@ const nullableShortText = z.string().trim().min(1).max(500).nullable();
 const nullableDate = localDateSchema.nullable();
 const nullableTime = localTimeSchema.nullable();
 const amountSchema = z.number().finite().nonnegative().max(1_000_000_000);
+
+const calendarDayNumber = (value: string) => Math.floor(Date.parse(`${value}T00:00:00.000Z`) / 86_400_000);
+export const scheduleRangeSchema = z.object({
+  startDate: localDateSchema,
+  endDate: localDateSchema,
+  rangeLabel: z.string().trim().min(1).max(80),
+}).strict().superRefine((range, context) => {
+  const days = calendarDayNumber(range.endDate) - calendarDayNumber(range.startDate) + 1;
+  if (days < 1) context.addIssue({ code: "custom", path: ["endDate"], message: "The schedule range is invalid." });
+  if (days > MAX_SCHEDULE_RANGE_DAYS) context.addIssue({ code: "custom", path: ["endDate"], message: "The schedule range cannot exceed 90 days." });
+});
+
+export const scheduleQuestionArgumentsSchema = z.object({
+  questionType: z.enum(["daily_overview", "weekly_overview", "range_overview", "upcoming", "availability", "planning", "busiest_day"]),
+  startDate: localDateSchema,
+  endDate: localDateSchema,
+  rangeLabel: z.string().trim().min(1).max(80),
+  includeEvents: z.boolean(),
+  includeTasks: z.boolean(),
+  includeGoalDeadlines: z.boolean(),
+  includeCompletedTasks: z.literal(false),
+}).strict().superRefine((data, context) => {
+  const range = scheduleRangeSchema.safeParse({ startDate: data.startDate, endDate: data.endDate, rangeLabel: data.rangeLabel });
+  if (!range.success) context.addIssue({ code: "custom", path: ["endDate"], message: "The schedule range is invalid or too long." });
+});
+
+export const scheduleEventSummarySchema = z.object({
+  title: z.string().trim().min(1).max(120),
+  date: localDateSchema,
+  startTime: nullableTime,
+  endTime: nullableTime,
+  allDay: z.boolean(),
+  location: z.string().trim().min(1).max(200).nullable(),
+}).strict().superRefine((event, context) => {
+  if (event.allDay && (event.startTime !== null || event.endTime !== null)) context.addIssue({ code: "custom", message: "All-day event summaries cannot include times." });
+  if (!event.allDay && event.startTime === null) context.addIssue({ code: "custom", path: ["startTime"], message: "Timed event summaries require a start time." });
+});
+
+export const scheduleTaskSummarySchema = z.object({
+  title: z.string().trim().min(1).max(120),
+  dueDate: localDateSchema,
+  dueTime: nullableTime,
+  priority: z.enum(["low", "medium", "high", "critical"]),
+  estimatedMinutes: z.number().int().positive().max(10_080).nullable(),
+  completed: z.boolean(),
+}).strict();
+
+export const scheduleGoalDeadlineSummarySchema = z.object({
+  title: z.string().trim().min(1).max(120),
+  targetDate: localDateSchema,
+}).strict();
+
+export const scheduleToolResultSchema = z.object({
+  name: z.literal("answer_schedule_question"),
+  range: scheduleRangeSchema,
+  events: z.array(scheduleEventSummarySchema).max(MAX_SCHEDULE_RECORDS),
+  tasks: z.array(scheduleTaskSummarySchema).max(MAX_SCHEDULE_RECORDS),
+  goalDeadlines: z.array(scheduleGoalDeadlineSummarySchema).max(MAX_SCHEDULE_RECORDS),
+}).strict().superRefine((result, context) => {
+  if (result.events.length + result.tasks.length + result.goalDeadlines.length > MAX_SCHEDULE_RECORDS) {
+    context.addIssue({ code: "custom", message: `Schedule results cannot exceed ${MAX_SCHEDULE_RECORDS} total records.` });
+  }
+  for (const [index, event] of result.events.entries()) {
+    if (event.date < result.range.startDate || event.date > result.range.endDate) context.addIssue({ code: "custom", path: ["events", index, "date"], message: "Event is outside the requested range." });
+  }
+  for (const [index, task] of result.tasks.entries()) {
+    if (task.dueDate > result.range.endDate) context.addIssue({ code: "custom", path: ["tasks", index, "dueDate"], message: "Task is outside the requested range." });
+  }
+  for (const [index, goal] of result.goalDeadlines.entries()) {
+    if (goal.targetDate < result.range.startDate || goal.targetDate > result.range.endDate) context.addIssue({ code: "custom", path: ["goalDeadlines", index, "targetDate"], message: "Goal deadline is outside the requested range." });
+  }
+});
 
 const contextItemSchema = z.record(z.string().max(100), z.unknown());
 const appContextSchema = z.object({
@@ -54,10 +129,12 @@ export const assistantV2RequestSchema = z.object({
   }, "Invalid IANA timezone."),
   pendingAction: pendingActionRequestSchema.nullable().default(null),
   appContext: appContextSchema.default({ relevantTasks: [], relevantEvents: [], relevantGoals: [] }),
+  weekStartsOn: z.enum(["monday", "sunday"]).default("monday"),
+  toolResult: scheduleToolResultSchema.nullable().default(null),
 }).strict();
 
 const safeReplySchema = z.string().trim().min(1).max(MAX_ASSISTANT_REPLY_LENGTH).refine(
-  (reply) => !/(?:\b(?:i|we|kairo)\s+(?:have\s+)?(?:added|saved|created|updated|scheduled|completed|put|placed)\b|\b(?:event|task|goal|contribution|appointment|meeting)\s+(?:has|was|is)\s+(?:been\s+)?(?:added|saved|created|updated|scheduled|completed)\b|\b(?:done|all set)\b|\b(?:it|that)\s+is\s+now\s+(?:on|in)\s+your\b)/i.test(reply),
+  (reply) => !/(?:\b(?:i|we|kairo)\s+(?:have\s+)?(?:added|saved|created|updated|scheduled|completed|put|placed|deleted|removed|cancell?ed)\b|\b(?:event|task|goal|contribution|appointment|meeting|concert|trip|game)\s+(?:has|was|is)\s+(?:been\s+)?(?:added|saved|created|updated|scheduled|completed|deleted|removed|cancell?ed)\b|\b(?:done|all set)\b|\b(?:it|that)\s+is\s+now\s+(?:on|in|off)\s+your\b)/i.test(reply),
   "The reply must not claim an action was completed.",
 );
 
@@ -88,6 +165,19 @@ const calendarEventArgumentsSchema = z.object({
   }
 });
 
+export const deletionReasonSchema = z.enum(["canceled", "not_attending", "duplicate", "user_requested", "other"]);
+const eventReferenceSchema = z.object({
+  title: z.string().trim().min(1).max(120),
+  date: nullableDate,
+  startTime: nullableTime,
+  endTime: nullableTime,
+  location: nullableShortText,
+}).strict();
+const deleteCalendarEventArgumentsSchema = z.object({
+  eventReference: eventReferenceSchema,
+  reason: deletionReasonSchema.nullable(),
+}).strict();
+
 const taskArgumentsSchema = z.object({
   title: z.string().trim().min(1).max(120),
   description: nullableShortText,
@@ -115,22 +205,9 @@ const contributionArgumentsSchema = z.object({
   note: nullableShortText,
 }).strict();
 
-const scheduleRangeSchema = z.object({ startDate: localDateSchema, endDate: localDateSchema }).strict().refine(
-  (range) => range.startDate <= range.endDate,
-  { path: ["endDate"], message: "The requested range is invalid." },
-);
-
-const scheduleQuestionArgumentsSchema = z.object({
-  questionType: z.enum(["day", "range", "availability", "conflicts", "upcoming"]),
-  requestedDate: nullableDate,
-  requestedRange: scheduleRangeSchema.nullable(),
-}).strict().superRefine((data, context) => {
-  if (data.questionType === "range" && data.requestedRange === null) context.addIssue({ code: "custom", path: ["requestedRange"], message: "Range questions require a range." });
-  if (data.requestedDate !== null && data.requestedRange !== null) context.addIssue({ code: "custom", message: "Use a date or a range, not both." });
-});
-
 export const toolArgumentSchemas = {
   create_calendar_event: calendarEventArgumentsSchema,
+  delete_calendar_event: deleteCalendarEventArgumentsSchema,
   create_task: taskArgumentsSchema,
   create_savings_goal: savingsGoalArgumentsSchema,
   add_goal_contribution: contributionArgumentsSchema,
@@ -151,6 +228,17 @@ const calendarEventDraftSchema = z.object({
   }
 });
 
+const deleteCalendarEventDraftSchema = z.object({
+  eventReference: z.object({
+    title: z.string().trim().min(1).max(120).nullable().optional(),
+    date: nullableDate.optional(),
+    startTime: nullableTime.optional(),
+    endTime: nullableTime.optional(),
+    location: nullableShortText.optional(),
+  }).strict(),
+  reason: deletionReasonSchema.nullable().optional(),
+}).strict();
+
 const taskDraftSchema = z.object({
   title: z.string().trim().min(1).max(120).nullable().optional(), description: nullableShortText.optional(), dueDate: nullableDate.optional(), dueTime: nullableTime.optional(),
   priority: z.enum(["low", "medium", "high"]).nullable().optional(), estimatedMinutes: z.number().int().positive().max(10_080).nullable().optional(), notes: nullableShortText.optional(),
@@ -167,24 +255,22 @@ const contributionDraftSchema = z.object({
   goalName: z.string().trim().min(1).max(120).nullable().optional(), amount: amountSchema.positive().nullable().optional(), date: nullableDate.optional(), note: nullableShortText.optional(),
 }).strict();
 
-const scheduleQuestionDraftSchema = z.object({
-  questionType: z.enum(["day", "range", "availability", "conflicts", "upcoming"]).nullable().optional(), requestedDate: nullableDate.optional(), requestedRange: scheduleRangeSchema.nullable().optional(),
-}).strict();
-
 export const toolDraftArgumentSchemas = {
   create_calendar_event: calendarEventDraftSchema,
+  delete_calendar_event: deleteCalendarEventDraftSchema,
   create_task: taskDraftSchema,
   create_savings_goal: savingsGoalDraftSchema,
   add_goal_contribution: contributionDraftSchema,
-  answer_schedule_question: scheduleQuestionDraftSchema,
+  answer_schedule_question: scheduleQuestionArgumentsSchema,
 } as const;
 
 const toolCallSchema = z.discriminatedUnion("name", [
   z.object({ name: z.literal("create_calendar_event"), requiresConfirmation: z.literal(true), arguments: calendarEventArgumentsSchema }).strict(),
+  z.object({ name: z.literal("delete_calendar_event"), requiresConfirmation: z.literal(true), arguments: deleteCalendarEventArgumentsSchema }).strict(),
   z.object({ name: z.literal("create_task"), requiresConfirmation: z.literal(true), arguments: taskArgumentsSchema }).strict(),
   z.object({ name: z.literal("create_savings_goal"), requiresConfirmation: z.literal(true), arguments: savingsGoalArgumentsSchema }).strict(),
   z.object({ name: z.literal("add_goal_contribution"), requiresConfirmation: z.literal(true), arguments: contributionArgumentsSchema }).strict(),
-  z.object({ name: z.literal("answer_schedule_question"), requiresConfirmation: z.literal(true), arguments: scheduleQuestionArgumentsSchema }).strict(),
+  z.object({ name: z.literal("answer_schedule_question"), requiresConfirmation: z.literal(false), arguments: scheduleQuestionArgumentsSchema }).strict(),
 ]);
 
 export const assistantV2ResponseSchema = z.discriminatedUnion("type", [
@@ -207,3 +293,5 @@ export const assistantV2ResponseSchema = z.discriminatedUnion("type", [
 export type AssistantV2Request = z.infer<typeof assistantV2RequestSchema>;
 export type AssistantAction = z.infer<typeof assistantActionSchema>;
 export type AssistantV2Response = z.infer<typeof assistantV2ResponseSchema>;
+export type ScheduleQuestionArguments = z.infer<typeof scheduleQuestionArgumentsSchema>;
+export type ScheduleToolResult = z.infer<typeof scheduleToolResultSchema>;
