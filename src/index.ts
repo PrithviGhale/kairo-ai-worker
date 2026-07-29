@@ -5,6 +5,8 @@ import {
   structuredRequestSchema,
 } from "./schemas";
 import { runStructuredExtraction } from "./structured";
+import { runAssistantV2 } from "./assistant-v2";
+import { assistantV2RequestSchema } from "./assistant-v2-schemas";
 import type { ChatMessage, Env } from "./types";
 
 const CONVERSATIONAL_MODEL_ID = "@cf/openai/gpt-oss-120b";
@@ -319,6 +321,35 @@ export async function handleStructuredRequest(request: Request, env: Env): Promi
   }
 }
 
+const sanitizeAssistantV2Body = (body: unknown) => {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return body;
+  const record = body as Record<string, unknown>;
+  if (record.history !== undefined && !Array.isArray(record.history)) return record;
+  const history = Array.isArray(record.history)
+    ? record.history.flatMap((item) => {
+      const parsed = historyMessageSchema.safeParse(item);
+      return parsed.success ? [parsed.data] : [];
+    }).slice(-MAX_HISTORY_MESSAGES)
+    : [];
+  return { ...record, history };
+};
+
+export async function handleAssistantV2Request(request: Request, env: Env): Promise<Response> {
+  try {
+    const rawBody = await readLimitedJson(request);
+    const parsed = assistantV2RequestSchema.safeParse(sanitizeAssistantV2Body(rawBody));
+    if (!parsed.success) return jsonResponse({ ok: false, error: "Please provide a valid assistant request." }, 400);
+    return jsonResponse(await runAssistantV2(env, parsed.data));
+  } catch (error) {
+    if (error instanceof RequestError) return jsonResponse({ ok: false, error: error.message }, error.status);
+    const category = error instanceof Error ? error.message : "UNKNOWN_ERROR";
+    console.error("Kairo assistant-v2 request failed:", category);
+    if (category === "MODEL_QUOTA_EXHAUSTED") return jsonResponse({ ok: false, error: "Kairo's free AI allowance is temporarily exhausted. Please try again later." }, 503);
+    if (category === "MODEL_RUN_FAILED") return jsonResponse({ ok: false, error: "Kairo's AI service is temporarily unavailable. Please try again." }, 502);
+    return jsonResponse({ ok: false, error: "Kairo could not safely interpret that request." }, 502);
+  }
+}
+
 const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -329,6 +360,11 @@ const worker = {
     if (url.pathname === "/api/kairo-structured") {
       if (request.method !== "POST") return jsonResponse({ ok: false, error: "Method not allowed." }, 405, { Allow: "POST, OPTIONS" });
       return handleStructuredRequest(request, env);
+    }
+
+    if (url.pathname === "/api/assistant-v2") {
+      if (request.method !== "POST") return jsonResponse({ ok: false, error: "Method not allowed." }, 405, { Allow: "POST, OPTIONS" });
+      return handleAssistantV2Request(request, env);
     }
 
     if (url.pathname === "/api/kairo" && request.method === "POST") return handleKairoRequest(request, env);
@@ -343,7 +379,7 @@ const worker = {
     return jsonResponse({
       ok: false,
       error: "Route not found.",
-      availableRoutes: ["GET /health", "POST /api/kairo", "POST /api/kairo-structured", "POST /api/chat"],
+      availableRoutes: ["GET /health", "POST /api/assistant-v2", "POST /api/kairo", "POST /api/kairo-structured", "POST /api/chat"],
     }, 404);
   },
 };

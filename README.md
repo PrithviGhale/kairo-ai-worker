@@ -1,16 +1,29 @@
 # Kairo AI Worker
 
-Cloudflare Workers AI backend for Kairo. It preserves the conversational API and adds a strictly validated calendar-extraction API that can propose—but never persist—an event.
+Cloudflare Workers AI backend for Kairo. It preserves the legacy APIs and adds a remote-first assistant that can propose—but never execute or persist—app actions.
 
 ## Routes
 
 - `GET /health` reports service readiness.
+- `POST /api/assistant-v2` uses function calling for conversational replies, focused follow-ups, and confirmation-required app action proposals.
 - `POST /api/kairo` returns a conversational `{ "ok": true, "reply": "..." }` response.
 - `POST /api/kairo-structured` interprets a possible calendar event and returns a `message`, `follow_up`, or `proposed_action` response.
 - `POST /api/chat` powers the included streaming sample application.
 - Static files under `public/` are served through the existing `ASSETS` binding.
 
 `OPTIONS` requests are supported for Expo development.
+
+## Assistant v2 API
+
+`POST /api/assistant-v2` uses `@cf/openai/gpt-oss-120b` and Cloudflare Workers AI traditional function calling. It defines five strict proposal tools:
+
+- `create_calendar_event`
+- `create_task`
+- `create_savings_goal`
+- `add_goal_contribution`
+- `answer_schedule_question`
+
+The endpoint accepts the newest message, up to eight history messages, the current ISO date/time and IANA timezone, an optional pending action, and only the app context explicitly included by the client. It returns `message`, `follow_up`, or `tool_call`. The Worker validates every result at runtime, always marks tool calls `requiresConfirmation: true`, and never executes a tool or claims that app data was saved.
 
 ## Structured calendar API
 
