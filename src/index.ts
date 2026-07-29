@@ -7,21 +7,41 @@ import {
 import { runStructuredExtraction } from "./structured";
 import type { ChatMessage, Env } from "./types";
 
-const CONVERSATIONAL_MODEL_ID = "@cf/meta/llama-3.1-8b-instruct-fp8";
+const CONVERSATIONAL_MODEL_ID = "@cf/openai/gpt-oss-120b";
+const REWRITE_MODEL_ID = "@cf/meta/llama-3.1-8b-instruct-fast";
+const DEFAULT_REPLY_WORD_LIMIT = 180;
+const CONCISE_REPLY_WORD_LIMIT = 100;
 
 const SYSTEM_PROMPT = `
 You are Kairo, a calm, intelligent, and helpful personal planning assistant.
+
+Conversation style:
+- Infer the user's intended meaning even when spelling, grammar, or dictation is imperfect.
+- Answer the actual intent directly instead of repeating or lightly rephrasing the user's message.
+- Silently correct obvious spelling and wording mistakes in names and proposed titles.
+- Use natural, warm language with varied sentence structure; do not sound like a form or template.
+- HARD LENGTH LIMIT: stay under 160 words unless the user explicitly asks for a detailed answer. Choose only the essential points and never begin a section that cannot be completed within this limit.
+- When the user asks for a short, simple, concise, one-step, or one-suggestion answer, stay under 100 words and still provide a complete answer.
+- Do not use a table unless the user asks for one.
+- Acknowledge what you understood when that helps, but do not restate the entire request.
+- Never ask for information the user already supplied, including an explicit start time, end time, or duration.
+- When ambiguity genuinely changes the result, explain the ambiguity in one short sentence and ask one focused question.
+- Answer generic requests for a plan, explanation, tip, rewrite, calculation, or advice immediately. Do not ask a follow-up merely to personalize an answer; provide a useful default first and invite refinement afterward if helpful.
 
 Your responsibilities:
 - Answer normal conversational questions naturally.
 - Help users organize tasks, calendar events, goals, and schedules.
 - Improve casual wording into concise, professional titles.
 - Ask one focused follow-up question when important information is missing.
+- For app actions, ask only when a missing field prevents a safe proposal. For ordinary conversation, ask only when the request cannot be answered responsibly without the missing detail.
 - Never claim that an event, task, reminder, or goal has already been saved.
 - Never assume that an unclear date means today.
 - Never assume an event time when the user did not provide one.
 - Before proposing an app action, clearly summarize what should be created.
 - The Kairo mobile app handles confirmation and saving.
+- Current app actions are limited to preparing new tasks, calendar events, savings goals, and contributions for confirmation. Do not claim support for recurring items, automatic reminders, direct editing, rescheduling, deletion, email, messaging, or external calendar access.
+- If asked what you can do, mention only: planning and explanations, preparing new tasks, preparing new calendar events, preparing savings goals, and preparing contributions. State that the user confirms changes in the app. Do not expand this list.
+- You do not see the user's local SQLite data in this remote endpoint. Never claim to have inspected their calendar, tasks, or goals.
 - Keep responses friendly, useful, and reasonably concise.
 
 Example:
@@ -54,6 +74,179 @@ function isChatMessage(value: unknown): value is ChatMessage {
   const message = value as Record<string, unknown>;
   return (message.role === "user" || message.role === "assistant") && typeof message.content === "string" && message.content.trim().length > 0;
 }
+
+export const extractAssistantText = (result: unknown) => {
+  if (typeof result === "string") return result.trim();
+  if (!result || typeof result !== "object") return "";
+  const record = result as Record<string, unknown>;
+  if (typeof record.response === "string") return record.response.trim();
+  if (typeof record.output_text === "string") return record.output_text.trim();
+
+  const choices = Array.isArray(record.choices) ? record.choices : [];
+  for (const choice of choices) {
+    if (!choice || typeof choice !== "object") continue;
+    const message = (choice as Record<string, unknown>).message;
+    if (message && typeof message === "object" && typeof (message as Record<string, unknown>).content === "string") {
+      const content = ((message as Record<string, unknown>).content as string).trim();
+      if (content) return content;
+    }
+  }
+
+  const output = Array.isArray(record.output) ? record.output : [];
+  const textParts: string[] = [];
+  for (const item of output) {
+    if (!item || typeof item !== "object") continue;
+    const content = (item as Record<string, unknown>).content;
+    if (!Array.isArray(content)) continue;
+    for (const part of content) {
+      if (!part || typeof part !== "object") continue;
+      const partRecord = part as Record<string, unknown>;
+      if ((partRecord.type === "output_text" || partRecord.type === "text") && typeof partRecord.text === "string") textParts.push(partRecord.text);
+    }
+  }
+  return textParts.join("\n").trim();
+};
+
+const countWords = (value: string) => value.trim().match(/\S+/g)?.length ?? 0;
+
+type RequestedStructure = { count: number; label: "Day" | "Step" };
+
+const numberWords: Record<string, number> = {
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+};
+
+const parseRequestedCount = (value: string) => {
+  const normalized = value.toLowerCase();
+  return /^\d+$/.test(normalized) ? Number(normalized) : numberWords[normalized];
+};
+
+const requestedStructure = (message: string): RequestedStructure | null => {
+  const dayMatch = message.match(/\b(one|two|three|four|five|six|seven|[1-7])[- ]day\b/i);
+  if (dayMatch) return { count: parseRequestedCount(dayMatch[1]), label: "Day" };
+  const stepMatch = message.match(/\b(one|two|three|four|five|six|seven|[1-7])\s+(?:practical\s+)?steps?\b/i);
+  if (stepMatch) return { count: parseRequestedCount(stepMatch[1]), label: "Step" };
+  return null;
+};
+
+const hasRequestedStructure = (reply: string, structure: RequestedStructure | null) => {
+  if (!structure) return true;
+  return Array.from({ length: structure.count }, (_, index) => index + 1).every((number) => (
+    new RegExp(`\\b${structure.label}\\s*${number}\\b`, "i").test(reply)
+      || (structure.label === "Step" && new RegExp(`(?:^|\\n)\\s*${number}[.)]`, "m").test(reply))
+  ));
+};
+
+const requestedReplyWordLimit = (message: string, structure = requestedStructure(message)) => {
+  if (structure && structure.count > 1) return 160;
+  return /\b(?:short|brief|concise|simple|one[- ](?:step|sentence|suggestion|tip)|one good first step|in \d+ sentences?)\b/i.test(message)
+    ? CONCISE_REPLY_WORD_LIMIT
+    : DEFAULT_REPLY_WORD_LIMIT;
+};
+
+const looksIncomplete = (reply: string) => {
+  const trimmed = reply.trim();
+  if (!trimmed) return true;
+  return !/[.!?…][\])}'\"]*$/.test(trimmed);
+};
+
+const clipAtSentenceBoundary = (reply: string, wordLimit: number) => {
+  const normalized = reply.replace(/\s+/g, " ").trim();
+  if (countWords(normalized) <= wordLimit && !looksIncomplete(normalized)) return normalized;
+
+  const sentences = normalized.match(/[^.!?…]+[.!?…]+[\])}'\"]*|[^.!?…]+$/g) ?? [];
+  const kept: string[] = [];
+  let usedWords = 0;
+  for (const sentence of sentences) {
+    const cleanSentence = sentence.trim();
+    const sentenceWords = countWords(cleanSentence);
+    if (!cleanSentence || usedWords + sentenceWords > wordLimit) break;
+    kept.push(cleanSentence);
+    usedWords += sentenceWords;
+  }
+  if (kept.length > 0) return kept.join(" ");
+
+  const words = normalized.split(/\s+/).slice(0, Math.max(1, wordLimit - 1));
+  return `${words.join(" ").replace(/[,;:\-–—]+$/, "")}…`;
+};
+
+const compactStructuredReply = (reply: string, structure: RequestedStructure, wordLimit: number) => {
+  if (!hasRequestedStructure(reply, structure)) return clipAtSentenceBoundary(reply, wordLimit);
+  const sections: string[] = [];
+  for (let number = 1; number <= structure.count; number += 1) {
+    const label = new RegExp(`(?:^|\\n|\\s)(?:${structure.label}\\s*)?${number}[.):\\-]?\\s*`, "i");
+    const currentMatch = label.exec(reply);
+    if (!currentMatch) continue;
+    const bodyStart = currentMatch.index + currentMatch[0].length;
+    const nextLabel = number < structure.count
+      ? new RegExp(`(?:^|\\n|\\s)(?:${structure.label}\\s*)?${number + 1}[.):\\-]?\\s*`, "i").exec(reply.slice(bodyStart))
+      : null;
+    const body = reply.slice(bodyStart, nextLabel ? bodyStart + nextLabel.index : undefined).trim();
+    const firstSentence = body.match(/^[\s\S]*?[.!?…](?=\s|$)/)?.[0]?.trim() ?? body;
+    if (firstSentence) sections.push(`${structure.label} ${number}: ${firstSentence}`);
+  }
+  const compact = sections.join("\n");
+  return compact && countWords(compact) <= wordLimit ? compact : clipAtSentenceBoundary(compact || reply, wordLimit);
+};
+
+const ensureCompleteConciseReply = async (env: Env, message: string, draftReply: string) => {
+  const structure = requestedStructure(message);
+  const wordLimit = requestedReplyWordLimit(message, structure);
+  if (countWords(draftReply) <= wordLimit && !looksIncomplete(draftReply) && hasRequestedStructure(draftReply, structure)) return draftReply;
+
+  const structureInstruction = structure
+    ? ` The user requested exactly ${structure.count} ${structure.label.toLowerCase()}s. Include every one using these labels: ${Array.from({ length: structure.count }, (_, index) => `${structure.label} ${index + 1}:`).join(", ")} Use one brief, useful sentence per label with no introduction or closing.`
+    : "";
+
+  try {
+    const result = await env.AI.run(REWRITE_MODEL_ID, {
+      messages: [
+        {
+          role: "system",
+          content: `Write the final answer to the user's request in at most ${wordLimit} words. Make it complete, direct, warm, and natural. Preserve every explicitly requested part or numbered item. Correct obvious dictation errors silently. Do not mention this rewrite, do not invent app capabilities, and do not ask a follow-up when a useful default answer is possible.${structureInstruction}`,
+        },
+        {
+          role: "user",
+          content: structure
+            ? `Original request:\n${message}\n\nAnswer only with the required labeled sections.`
+            : `Original request:\n${message}\n\nDraft to improve:\n${draftReply}`,
+        },
+      ],
+      max_tokens: 320,
+      temperature: 0,
+    });
+    const rewritten = extractAssistantText(result);
+    if (rewritten) {
+      if (structure && hasRequestedStructure(rewritten, structure)) return compactStructuredReply(rewritten, structure, wordLimit);
+      if (structure) {
+        const labels = Array.from({ length: structure.count }, (_, index) => `${structure.label} ${index + 1}:`).join("\n");
+        const repairResult = await env.AI.run(REWRITE_MODEL_ID, {
+          messages: [
+            {
+              role: "system",
+              content: `Answer the request in at most ${wordLimit} words. Your entire response must contain exactly these ${structure.count} labeled lines:\n${labels}\nWrite one short, useful sentence after every label. Do not add an introduction, closing, or question.`,
+            },
+            { role: "user", content: message },
+          ],
+          max_tokens: 260,
+          temperature: 0,
+        });
+        const repaired = extractAssistantText(repairResult);
+        if (repaired && hasRequestedStructure(repaired, structure)) return compactStructuredReply(repaired, structure, wordLimit);
+      }
+      return clipAtSentenceBoundary(rewritten, wordLimit);
+    }
+  } catch (error) {
+    console.error("Kairo reply rewrite failed:", error instanceof Error ? error.name : "UnknownError");
+  }
+
+  return clipAtSentenceBoundary(draftReply, wordLimit);
+};
 
 class RequestError extends Error {
   constructor(readonly status: number, message: string) {
@@ -162,21 +355,28 @@ async function handleKairoRequest(request: Request, env: Env): Promise<Response>
     const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
     const message = typeof body?.message === "string" ? body.message.trim() : "";
     if (!message) return jsonResponse({ ok: false, error: "Please provide a message." }, 400);
+    if (/\b(?:what can you do|what can you help(?: me)? with|how can you help(?: me)?)\b/i.test(message)) {
+      return jsonResponse({
+        ok: true,
+        reply: "I can help you plan, explain ideas, and prepare new tasks, calendar events, savings goals, and goal contributions. Kairo shows every proposed change for your confirmation before saving it.",
+      });
+    }
 
     const history = Array.isArray(body?.history) ? body.history.filter(isChatMessage).slice(-8) : [];
     const currentDate = typeof body?.currentDate === "string" ? body.currentDate : new Date().toISOString();
     const timezone = typeof body?.timezone === "string" ? body.timezone : "Unknown";
-    const result = (await env.AI.run(CONVERSATIONAL_MODEL_ID, {
+    const result = await env.AI.run(CONVERSATIONAL_MODEL_ID, {
       messages: [
         { role: "system", content: `${SYSTEM_PROMPT}\n\nCurrent date and time: ${currentDate}\nUser timezone: ${timezone}` },
         ...history,
         { role: "user", content: message },
       ],
       max_tokens: 500,
-      temperature: 0.3,
-    })) as { response?: unknown };
-    const reply = typeof result?.response === "string" ? result.response.trim() : "";
-    if (!reply) return jsonResponse({ ok: false, error: "The AI returned an empty response." }, 502);
+      temperature: 0.2,
+    });
+    const draftReply = extractAssistantText(result);
+    if (!draftReply) return jsonResponse({ ok: false, error: "The AI returned an empty response." }, 502);
+    const reply = await ensureCompleteConciseReply(env, message, draftReply);
     return jsonResponse({ ok: true, reply });
   } catch (error) {
     console.error("Kairo AI request failed:", error instanceof Error ? error.name : "UnknownError");

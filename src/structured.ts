@@ -22,6 +22,8 @@ Rules:
 - Never default a missing or unclear date to today.
 - Never default a missing time to the current time.
 - Never ask for duration when startTime and endTime are already known.
+- Treat phrases such as "starts at 9 AM and ends at 12 PM" as a complete three-hour range.
+- Remove conversational filler such as "so", "around like", "to watch", and trailing command questions from titles.
 - When both times are known, preserve them and calculate duration internally.
 - When neither time has AM or PM, ask whether the range is AM or PM.
 - When only the second time has AM or PM, infer the same period for both when the resulting range is valid.

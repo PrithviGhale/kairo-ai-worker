@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import worker from "./index";
+import worker, { extractAssistantText } from "./index";
 import { MAX_REQUEST_BYTES, proposedActionResponseSchema } from "./schemas";
 import { STRUCTURED_MODEL_ID } from "./structured";
 import type { Env } from "./types";
@@ -30,6 +30,18 @@ const environment = (response: unknown) => {
   return { env, run };
 };
 
+const environmentResult = (result: unknown) => {
+  const run = vi.fn(async (_model: string, _input: Record<string, unknown>) => result);
+  const env: Env = { AI: { run }, ASSETS: { fetch: vi.fn(async () => new Response("asset")) } };
+  return { env, run };
+};
+
+const environmentResults = (...results: unknown[]) => {
+  const run = vi.fn(async (_model: string, _input: Record<string, unknown>) => results.shift());
+  const env: Env = { AI: { run }, ASSETS: { fetch: vi.fn(async () => new Response("asset")) } };
+  return { env, run };
+};
+
 const request = (path: string, body: unknown, method = "POST", headers: Record<string, string> = {}) => new Request(`https://worker.test${path}`, {
   method,
   headers: { "Content-Type": "application/json", ...headers },
@@ -51,7 +63,11 @@ describe("Worker routes", () => {
     const response = await worker.fetch(request("/api/kairo", { message: "How are you?", currentDate, timezone }), env);
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ ok: true, reply: "A conversational reply" });
-    expect(run.mock.calls[0][0]).toBe("@cf/meta/llama-3.1-8b-instruct-fp8");
+    expect(run.mock.calls[0][0]).toBe("@cf/openai/gpt-oss-120b");
+    const input = run.mock.calls[0][1] as { messages: { content: string }[]; max_tokens: number };
+    expect(input.messages[0].content).toContain("HARD LENGTH LIMIT");
+    expect(input.messages[0].content).toContain("Current app actions are limited");
+    expect(input.max_tokens).toBe(500);
   });
 
   it("supports OPTIONS and rejects unsupported structured methods", async () => {
@@ -96,6 +112,118 @@ describe("structured endpoint", () => {
       originalMessage: "Add to my calendar I have FIFA game Sunday at 3 PM till 4:45 PM",
       data: { title: "FIFA Game", date: "2026-07-19", startTime: "15:00", endTime: "16:45" },
     });
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("reads current Responses API output from the conversational model", async () => {
+    const { env } = environmentResult({
+      id: "resp_test",
+      object: "response",
+      output: [
+        { type: "reasoning", content: [] },
+        { type: "message", content: [{ type: "output_text", text: "Hello! How can I help?" }] },
+      ],
+    });
+    const response = await worker.fetch(request("/api/kairo", { message: "Hello", currentDate, timezone }), env);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ ok: true, reply: "Hello! How can I help?" });
+  });
+
+  it("answers capability questions truthfully without asking the model to invent features", async () => {
+    const { env, run } = environment("unsupported model claim");
+    const response = await worker.fetch(request("/api/kairo", { message: "What can you help me with?", currentDate, timezone }), env);
+    expect(response.status).toBe(200);
+    const json = await response.json() as { ok: boolean; reply: string };
+    expect(json.ok).toBe(true);
+    expect(json.reply).toContain("tasks, calendar events, savings goals, and goal contributions");
+    expect(json.reply).not.toMatch(/reminder|recurring|email|message/i);
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("rewrites an overlong conversational answer into a complete concise answer", async () => {
+    const longDraft = `${"This draft rambles without helping enough. ".repeat(45)}It ends abruptly`;
+    const conciseReply = "Day 1: Review the core ideas for 45 minutes, then test yourself.\nDay 2: Practice weak areas and explain each answer aloud.\nDay 3: Take a timed practice test, review mistakes, and finish with a light recap.";
+    const { env, run } = environmentResults(
+      { response: longDraft },
+      { response: conciseReply },
+    );
+    const response = await worker.fetch(request("/api/kairo", {
+      message: "Give me a simple three-day study plan.",
+      currentDate,
+      timezone,
+    }), env);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ ok: true, reply: conciseReply });
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(run.mock.calls[1][0]).toBe("@cf/meta/llama-3.1-8b-instruct-fast");
+    const rewritePrompt = (run.mock.calls[1][1] as { messages: Array<{ content: string }> }).messages[0].content;
+    expect(rewritePrompt).toContain("at most 160 words");
+    expect(rewritePrompt).toContain("Day 1:, Day 2:, Day 3:");
+  });
+
+  it("does not accept a multi-day answer that omits requested days", async () => {
+    const incompleteDraft = "Day 1: Review the foundations carefully.";
+    const completeReply = "Day 1: Review the core ideas and make a one-page summary.\nDay 2: Practice weak areas and explain each answer aloud.\nDay 3: Take a timed practice test and review every mistake.";
+    const { env, run } = environmentResults({ response: incompleteDraft }, { response: completeReply });
+    const response = await worker.fetch(request("/api/kairo", {
+      message: "Help me make a simple three-day study plan.",
+      currentDate,
+      timezone,
+    }), env);
+    await expect(response.json()).resolves.toEqual({ ok: true, reply: completeReply });
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it("repairs a rewrite that still omits one of the requested sections", async () => {
+    const incompleteDraft = "Day 1: Review the foundations carefully.";
+    const incompleteRewrite = "Day 1: Review the syllabus and make notes.";
+    const repairedReply = "Day 1: Review the core ideas and make a one-page summary.\nDay 2: Practice weak areas and explain each answer aloud.\nDay 3: Take a timed practice test and review every mistake.";
+    const { env, run } = environmentResults(
+      { response: incompleteDraft },
+      { response: incompleteRewrite },
+      { response: repairedReply },
+    );
+    const response = await worker.fetch(request("/api/kairo", {
+      message: "Help me make a simple three-day study plan.",
+      currentDate,
+      timezone,
+    }), env);
+    await expect(response.json()).resolves.toEqual({ ok: true, reply: repairedReply });
+    expect(run).toHaveBeenCalledTimes(3);
+    expect((run.mock.calls[2][1] as { messages: Array<{ content: string }> }).messages[0].content).toContain("Day 3:");
+  });
+
+  it("uses a sentence-safe hard limit when the rewrite is still too long", async () => {
+    const firstSentence = "Start by writing the single smallest action you can finish in ten minutes.";
+    const overlong = `${firstSentence} ${"Then keep adding unnecessary detail. ".repeat(40)}`;
+    const { env, run } = environmentResults({ response: overlong }, { response: overlong });
+    const response = await worker.fetch(request("/api/kairo", {
+      message: "I feel overwhelmed. Give me one good first step.",
+      currentDate,
+      timezone,
+    }), env);
+    const json = await response.json() as { reply: string };
+    expect(json.reply.startsWith(firstSentence)).toBe(true);
+    expect(json.reply.trim()).toMatch(/[.!?…]$/);
+    expect(json.reply.trim().split(/\s+/).length).toBeLessThanOrEqual(100);
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it("supports legacy, chat-completions, and Responses API result shapes", () => {
+    expect(extractAssistantText({ response: "Legacy" })).toBe("Legacy");
+    expect(extractAssistantText({ choices: [{ message: { content: "Chat completion" } }] })).toBe("Chat completion");
+    expect(extractAssistantText({ output_text: "Convenience text" })).toBe("Convenience text");
+    expect(extractAssistantText({ output: [{ type: "message", content: [{ type: "output_text", text: "Responses text" }] }] })).toBe("Responses text");
+  });
+
+  it("uses an explicitly stated end time without asking for duration or copying command text", async () => {
+    const { env, run } = environment(proposedCandidate);
+    const message = "So I have a formula game to watch tomorrow at 9 AM and ends at 12 PM. Can you add that to my calendar?";
+    const response = await worker.fetch(request("/api/kairo-structured", structuredBody(message)), env);
+    const json = await response.json() as { type: string; reply: string; action: { data: Record<string, unknown> } };
+    expect(json.type).toBe("proposed_action");
+    expect(json.reply.toLowerCase()).not.toContain("how long");
+    expect(json.action.data).toMatchObject({ title: "Formula 1 Race", date: "2026-07-18", startTime: "09:00", endTime: "12:00" });
     expect(run).not.toHaveBeenCalled();
   });
 
