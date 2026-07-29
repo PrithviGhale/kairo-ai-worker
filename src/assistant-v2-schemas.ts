@@ -7,6 +7,13 @@ import {
   MAX_HISTORY_MESSAGES,
   MAX_MESSAGE_LENGTH,
 } from "./schemas";
+import {
+  checkinInsightArgumentsSchema,
+  dailyBriefingArgumentsSchema,
+  intelligenceToolResultSchema,
+  savingsProgressArgumentsSchema,
+  type IntelligenceToolResult,
+} from "./intelligence-schemas";
 
 export const ASSISTANT_V2_MODEL_ID = "@cf/openai/gpt-oss-120b";
 export const MAX_ASSISTANT_REPLY_LENGTH = 6_000;
@@ -20,6 +27,9 @@ export const assistantActionSchema = z.enum([
   "create_savings_goal",
   "add_goal_contribution",
   "answer_schedule_question",
+  "read_savings_progress",
+  "read_checkin_insights",
+  "generate_daily_briefing",
 ]);
 
 const nullableShortText = z.string().trim().min(1).max(500).nullable();
@@ -130,7 +140,10 @@ export const assistantV2RequestSchema = z.object({
   pendingAction: pendingActionRequestSchema.nullable().default(null),
   appContext: appContextSchema.default({ relevantTasks: [], relevantEvents: [], relevantGoals: [] }),
   weekStartsOn: z.enum(["monday", "sunday"]).default("monday"),
-  toolResult: scheduleToolResultSchema.nullable().default(null),
+  toolResult: z.discriminatedUnion("name", [
+    scheduleToolResultSchema,
+    ...intelligenceToolResultSchema.options,
+  ]).nullable().default(null),
 }).strict();
 
 const safeReplySchema = z.string().trim().min(1).max(MAX_ASSISTANT_REPLY_LENGTH).refine(
@@ -212,6 +225,9 @@ export const toolArgumentSchemas = {
   create_savings_goal: savingsGoalArgumentsSchema,
   add_goal_contribution: contributionArgumentsSchema,
   answer_schedule_question: scheduleQuestionArgumentsSchema,
+  read_savings_progress: savingsProgressArgumentsSchema,
+  read_checkin_insights: checkinInsightArgumentsSchema,
+  generate_daily_briefing: dailyBriefingArgumentsSchema,
 } as const;
 
 const calendarEventDraftSchema = z.object({
@@ -262,6 +278,9 @@ export const toolDraftArgumentSchemas = {
   create_savings_goal: savingsGoalDraftSchema,
   add_goal_contribution: contributionDraftSchema,
   answer_schedule_question: scheduleQuestionArgumentsSchema,
+  read_savings_progress: savingsProgressArgumentsSchema,
+  read_checkin_insights: checkinInsightArgumentsSchema,
+  generate_daily_briefing: dailyBriefingArgumentsSchema,
 } as const;
 
 const toolCallSchema = z.discriminatedUnion("name", [
@@ -271,6 +290,9 @@ const toolCallSchema = z.discriminatedUnion("name", [
   z.object({ name: z.literal("create_savings_goal"), requiresConfirmation: z.literal(true), arguments: savingsGoalArgumentsSchema }).strict(),
   z.object({ name: z.literal("add_goal_contribution"), requiresConfirmation: z.literal(true), arguments: contributionArgumentsSchema }).strict(),
   z.object({ name: z.literal("answer_schedule_question"), requiresConfirmation: z.literal(false), arguments: scheduleQuestionArgumentsSchema }).strict(),
+  z.object({ name: z.literal("read_savings_progress"), requiresConfirmation: z.literal(false), arguments: savingsProgressArgumentsSchema }).strict(),
+  z.object({ name: z.literal("read_checkin_insights"), requiresConfirmation: z.literal(false), arguments: checkinInsightArgumentsSchema }).strict(),
+  z.object({ name: z.literal("generate_daily_briefing"), requiresConfirmation: z.literal(false), arguments: dailyBriefingArgumentsSchema }).strict(),
 ]);
 
 export const assistantV2ResponseSchema = z.discriminatedUnion("type", [
@@ -295,3 +317,4 @@ export type AssistantAction = z.infer<typeof assistantActionSchema>;
 export type AssistantV2Response = z.infer<typeof assistantV2ResponseSchema>;
 export type ScheduleQuestionArguments = z.infer<typeof scheduleQuestionArgumentsSchema>;
 export type ScheduleToolResult = z.infer<typeof scheduleToolResultSchema>;
+export type AssistantToolResult = ScheduleToolResult | IntelligenceToolResult;

@@ -11,6 +11,7 @@ import {
 import type { Env } from "./types";
 import { extractEventHints } from "./calendar";
 import { dateFromRecentScheduleRange, resolveScheduleQuestion, summarizeSchedule } from "./schedule";
+import { resolveIntelligenceRequest, summarizeIntelligenceResult } from "./intelligence";
 
 const nullableString = (description: string, maxLength = 500) => ({ type: ["string", "null"], minLength: 1, maxLength, description });
 const nullableDate = (description: string) => ({ type: ["string", "null"], pattern: "^\\d{4}-\\d{2}-\\d{2}$", description });
@@ -115,6 +116,46 @@ export const ASSISTANT_TOOL_FUNCTIONS = [
       required: ["questionType", "startDate", "endDate", "rangeLabel", "includeEvents", "includeTasks", "includeGoalDeadlines", "includeCompletedTasks"],
     },
   },
+  {
+    name: "read_savings_progress",
+    description: "Request sanitized active savings-goal totals from the mobile app. Read-only, never guesses balances, and never requests contribution history or IDs.",
+    parameters: {
+      type: "object", additionalProperties: false,
+      properties: {
+        goalName: { type: ["string", "null"], minLength: 1, maxLength: 120, description: "Specific goal name when the user named one; otherwise null." },
+        includeAllActiveGoals: { type: "boolean", enum: [true] },
+        includeCompletedGoals: { type: "boolean", enum: [false] },
+      },
+      required: ["goalName", "includeAllActiveGoals", "includeCompletedGoals"],
+    },
+  },
+  {
+    name: "read_checkin_insights",
+    description: "Request sanitized aggregate mood, energy, and stress insights from the mobile app. Read-only. Never request raw notes and never diagnose the user.",
+    parameters: {
+      type: "object", additionalProperties: false,
+      properties: {
+        range: { type: "string", enum: ["7_days", "14_days", "30_days", "90_days"] },
+        includeWeekdayPatterns: { type: "boolean", enum: [true] },
+        includeCurrentCheckIn: { type: "boolean", enum: [true] },
+      },
+      required: ["range", "includeWeekdayPatterns", "includeCurrentCheckIn"],
+    },
+  },
+  {
+    name: "generate_daily_briefing",
+    description: "Request a single sanitized read-only briefing context containing relevant schedule, savings, and check-in aggregates. Never change, move, complete, or cancel data.",
+    parameters: {
+      type: "object", additionalProperties: false,
+      properties: {
+        period: { type: "string", enum: ["today", "this_week"] },
+        includeSchedule: { type: "boolean", enum: [true] },
+        includeSavingsProgress: { type: "boolean", enum: [true] },
+        includeCheckInInsights: { type: "boolean", enum: [true] },
+      },
+      required: ["period", "includeSchedule", "includeSavingsProgress", "includeCheckInInsights"],
+    },
+  },
 ] as const;
 
 // GPT-OSS uses Cloudflare's current OpenAI-compatible Chat Completions tool
@@ -134,7 +175,9 @@ Calendar examples: "BTS concert August 6, around 8 PM to around 12 AM" means tit
 
 Use delete_calendar_event only when the user clearly asks to remove a saved calendar event: remove, delete, take it off the calendar/schedule, cancel a named event, an event was canceled, or the user is no longer attending/cannot make it. "My concert might get canceled" and "What happens if my dentist cancels?" are ordinary conversation, not deletion. Plain "cancel", "never mind", "cancel this request", and "don't do it" cancel the current Assistant request and must not delete a saved event. Resolve "that", "it", "the appointment", "the concert", "the trip", and "the game" from recent conversation and relevantEvents. If more than one local event could match, ask for one date or time instead of guessing. Deletion references contain descriptive fields only and never an ID. This app supports deleting only one local calendar entry, not an entire recurring series.
 
-Use answer_schedule_question for read-only schedule, availability, busiest-day, and planning-around-schedule questions. It requests local data and never requires confirmation. Never invent schedule contents. Use create_calendar_event for new events, delete_calendar_event for confirmed removal proposals, create_task for tasks, create_savings_goal for savings goals, and add_goal_contribution for contributions. For ordinary questions or greetings, answer naturally without calling a tool. Keep all replies concise.`;
+Use answer_schedule_question for read-only schedule and availability questions. Use read_savings_progress for questions about existing savings balances, progress, remaining amounts, and active goals. Use read_checkin_insights for questions about recent mood or energy patterns. Use generate_daily_briefing for a personalized daily or weekly briefing, what to focus on today, or planning based on how the user feels. These four read-only tools request sanitized local data and never require confirmation. Never invent schedule, savings, check-in, or personalization data. Never request raw check-in notes, contribution history, or database IDs. Describe check-in patterns cautiously with phrases such as "based on your recent check-ins", "may", "appears", "you recorded", and "you logged". Never diagnose a medical or psychological condition, make absolute mood claims, or describe a pattern with fewer than three samples.
+
+Use create_calendar_event for new events, delete_calendar_event for confirmed removal proposals, create_task for tasks, create_savings_goal for savings goals, and add_goal_contribution for contributions. All mutations still require local confirmation. For ordinary questions or greetings, answer naturally without calling a tool. Keep all replies concise.`;
 
 type ParsedToolCall = { name: string; arguments: unknown };
 
@@ -201,7 +244,17 @@ const allowedArgumentKeys: Record<AssistantAction, readonly string[]> = {
   create_savings_goal: ["title", "targetAmount", "startingAmount", "targetDate", "description"],
   add_goal_contribution: ["goalName", "amount", "date", "note"],
   answer_schedule_question: ["questionType", "startDate", "endDate", "rangeLabel", "includeEvents", "includeTasks", "includeGoalDeadlines", "includeCompletedTasks"],
+  read_savings_progress: ["goalName", "includeAllActiveGoals", "includeCompletedGoals"],
+  read_checkin_insights: ["range", "includeWeekdayPatterns", "includeCurrentCheckIn"],
+  generate_daily_briefing: ["period", "includeSchedule", "includeSavingsProgress", "includeCheckInInsights"],
 };
+
+const READ_ONLY_ACTIONS = new Set<AssistantAction>([
+  "answer_schedule_question",
+  "read_savings_progress",
+  "read_checkin_insights",
+  "generate_daily_briefing",
+]);
 
 const questionFor = (action: AssistantAction, field: string, data: Record<string, unknown>): string => {
   const title = typeof data.title === "string" ? ` for ${data.title}` : "";
@@ -386,8 +439,16 @@ export const processAssistantModelResult = (request: AssistantV2Request, result:
   }
   const complete = toolArgumentSchemas[action].safeParse({ ...prior, ...current });
   if (!complete.success) throw new Error("MODEL_RESPONSE_INVALID");
-  const reply = action === "delete_calendar_event" ? "I found the event you want to remove. Please confirm before it is deleted." : action === "answer_schedule_question" ? "I’ll check that schedule." : `Kairo prepared this ${action === "create_calendar_event" ? "event" : action === "create_task" ? "task" : action === "create_savings_goal" ? "savings goal" : "contribution"} for your confirmation.`;
-  return validateResponse({ ok: true, type: "tool_call", reply, toolCall: { name: action, requiresConfirmation: action !== "answer_schedule_question", arguments: complete.data } });
+  const readReply: Partial<Record<AssistantAction, string>> = {
+    answer_schedule_question: "I’ll check that schedule.",
+    read_savings_progress: "I’ll check your active savings progress.",
+    read_checkin_insights: "I’ll look at your recent check-in patterns.",
+    generate_daily_briefing: "I’ll prepare a briefing from the local data you choose to share.",
+  };
+  const reply = action === "delete_calendar_event"
+    ? "I found the event you want to remove. Please confirm before it is deleted."
+    : readReply[action] ?? `Kairo prepared this ${action === "create_calendar_event" ? "event" : action === "create_task" ? "task" : action === "create_savings_goal" ? "savings goal" : "contribution"} for your confirmation.`;
+  return validateResponse({ ok: true, type: "tool_call", reply, toolCall: { name: action, requiresConfirmation: !READ_ONLY_ACTIONS.has(action), arguments: complete.data } });
 };
 
 const withoutDuplicateNewestMessage = (request: AssistantV2Request) => {
@@ -397,9 +458,55 @@ const withoutDuplicateNewestMessage = (request: AssistantV2Request) => {
   return history.slice(-8);
 };
 
+const normalizedReference = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const inclusiveDays = (startDate: string, endDate: string) => Math.floor((Date.parse(`${endDate}T00:00:00.000Z`) - Date.parse(`${startDate}T00:00:00.000Z`)) / 86_400_000) + 1;
+const localDateInTimezone = (currentDate: string, timezone: string) => {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(currentDate));
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+};
+
 export const runAssistantV2 = async (env: Env, request: AssistantV2Request): Promise<AssistantV2Response> => {
-  if (request.toolResult) return validateResponse({ ok: true, type: "message", reply: summarizeSchedule(request.toolResult, request.currentDate, request.timezone) });
-  const scheduleQuestion = resolveScheduleQuestion(request.message, request.currentDate, request.timezone, request.weekStartsOn, request.history);
+  const intelligenceRequest = resolveIntelligenceRequest(request.message);
+  const scheduleQuestion = intelligenceRequest ? null : resolveScheduleQuestion(request.message, request.currentDate, request.timezone, request.weekStartsOn, request.history);
+  if (request.toolResult) {
+    const expectedName = intelligenceRequest?.name ?? (scheduleQuestion ? "answer_schedule_question" : null);
+    if (!expectedName || request.toolResult.name !== expectedName) throw new Error("TOOL_RESULT_MISMATCH");
+    if (request.toolResult.name === "answer_schedule_question") {
+      if (!scheduleQuestion || request.toolResult.range.startDate !== scheduleQuestion.startDate || request.toolResult.range.endDate !== scheduleQuestion.endDate) throw new Error("TOOL_RESULT_MISMATCH");
+    } else if (request.toolResult.name === "read_savings_progress") {
+      if (intelligenceRequest?.name !== "read_savings_progress") throw new Error("TOOL_RESULT_MISMATCH");
+      const goalName = intelligenceRequest.arguments.goalName;
+      if (goalName) {
+        const expectedGoal = normalizedReference(goalName);
+        const containsUnexpectedGoal = request.toolResult.goals.some((goal) => {
+          const title = normalizedReference(goal.title);
+          return !title.includes(expectedGoal) && !expectedGoal.includes(title);
+        });
+        if (containsUnexpectedGoal) throw new Error("TOOL_RESULT_MISMATCH");
+      }
+    } else if (request.toolResult.name === "read_checkin_insights") {
+      if (intelligenceRequest?.name !== "read_checkin_insights") throw new Error("TOOL_RESULT_MISMATCH");
+      const expectedDays = Number(intelligenceRequest.arguments.range.split("_")[0]);
+      if (inclusiveDays(request.toolResult.range.startDate, request.toolResult.range.endDate) !== expectedDays) throw new Error("TOOL_RESULT_MISMATCH");
+    } else {
+      if (intelligenceRequest?.name !== "generate_daily_briefing"
+        || request.toolResult.timezone !== request.timezone
+        || request.toolResult.localDate !== localDateInTimezone(request.currentDate, request.timezone)) throw new Error("TOOL_RESULT_MISMATCH");
+    }
+    const reply = request.toolResult.name === "answer_schedule_question"
+      ? summarizeSchedule(request.toolResult, request.currentDate, request.timezone)
+      : summarizeIntelligenceResult(request.toolResult, request.currentDate, request.timezone);
+    return validateResponse({ ok: true, type: "message", reply });
+  }
+  if (intelligenceRequest) {
+    const reply = intelligenceRequest.name === "read_savings_progress"
+      ? "I’ll check your active savings progress."
+      : intelligenceRequest.name === "read_checkin_insights"
+        ? "I’ll look at your recent check-in patterns."
+        : "I’ll prepare a briefing from your local schedule, goals, and check-in summary.";
+    return validateResponse({ ok: true, type: "tool_call", reply, toolCall: { name: intelligenceRequest.name, requiresConfirmation: false, arguments: intelligenceRequest.arguments } });
+  }
   if (scheduleQuestion) return validateResponse({ ok: true, type: "tool_call", reply: "I’ll check that schedule.", toolCall: { name: "answer_schedule_question", requiresConfirmation: false, arguments: scheduleQuestion } });
   const context = JSON.stringify({ pendingAction: request.pendingAction, appContext: request.appContext });
   let result: unknown;

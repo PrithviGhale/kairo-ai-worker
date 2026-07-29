@@ -46,6 +46,7 @@ describe("POST /api/assistant-v2", () => {
     expect(run.mock.calls[0][1]).toMatchObject({ tools: ASSISTANT_TOOLS, stream: false, max_tokens: 700 });
     expect(ASSISTANT_TOOLS.map((tool) => tool.function.name)).toEqual([
       "create_calendar_event", "delete_calendar_event", "create_task", "create_savings_goal", "add_goal_contribution", "answer_schedule_question",
+      "read_savings_progress", "read_checkin_insights", "generate_daily_briefing",
     ]);
   });
 
