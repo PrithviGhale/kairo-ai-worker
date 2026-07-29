@@ -44,7 +44,7 @@ describe("POST /api/assistant-v2", () => {
     await worker.fetch(request(body("Hello")), env);
     expect(run.mock.calls[0][0]).toBe(ASSISTANT_V2_MODEL_ID);
     expect(run.mock.calls[0][1]).toMatchObject({ tools: ASSISTANT_TOOLS, stream: false, max_tokens: 700 });
-    expect(ASSISTANT_TOOLS.map((tool) => tool.name)).toEqual([
+    expect(ASSISTANT_TOOLS.map((tool) => tool.function.name)).toEqual([
       "create_calendar_event", "create_task", "create_savings_goal", "add_goal_contribution", "answer_schedule_question",
     ]);
   });
@@ -69,11 +69,11 @@ describe("POST /api/assistant-v2", () => {
   });
 
   it("asks one exact-time follow-up for a doctor appointment and preserves its draft", async () => {
-    const args = event({ title: "Doctor Appointment", date: "2026-08-04", startTime: null, endTime: null, crossesMidnight: false });
+    const args = event({ title: "Doctor Appointment", date: "2026-08-11", startTime: null, endTime: null, crossesMidnight: false });
     const { env } = environment(call("create_calendar_event", args));
     const json = await (await worker.fetch(request(body("I have a doctor thing next Tuesday morning.")), env)).json() as Record<string, any>;
     expect(json).toMatchObject({ type: "follow_up", reply: "What exact time does the event for Doctor Appointment start?", pendingAction: { action: "create_calendar_event", missingFields: ["startTime"] } });
-    expect(json.pendingAction.collectedData).toMatchObject({ title: "Doctor Appointment", date: "2026-08-04" });
+    expect(json.pendingAction.collectedData).toMatchObject({ title: "Doctor Appointment", date: "2026-08-11" });
   });
 
   it.each([
@@ -103,16 +103,18 @@ describe("POST /api/assistant-v2", () => {
       { role: "user", content: message },
     ];
     const { env, run } = environment(call("create_calendar_event", event()));
-    await worker.fetch(request(body(message, { history, appContext: { relevantTasks: [], relevantEvents: [{ title: "Existing" }], relevantGoals: [] } })), env);
+    const response = await worker.fetch(request(body(message, { history, appContext: { relevantTasks: [], relevantEvents: [{ title: "Existing" }], relevantGoals: [] } })), env);
     const messages = run.mock.calls[0][1].messages as Array<{ role: string; content: string }>;
     expect(messages.filter((item) => item.role === "user" && item.content === message)).toHaveLength(1);
     expect(messages.some((item) => item.content.includes("The BTS concert"))).toBe(true);
     expect(messages[0].content).toContain('"relevantEvents":[{"title":"Existing"}]');
+    const json = await response.json() as Record<string, any>;
+    expect(json.toolCall.arguments.title).toBe("BTS Concert");
   });
 
   it("merges a pending draft with a focused follow-up answer", async () => {
     const pendingAction = { action: "create_calendar_event", collectedData: { ...event({ startTime: null, endTime: null, crossesMidnight: false }) }, missingFields: ["startTime"] };
-    const args = event({ title: "Doctor Appointment", date: "2026-08-04", startTime: "09:00", endTime: null, crossesMidnight: false });
+    const args = event({ title: "Doctor Appointment", date: "2026-08-11", startTime: "09:00", endTime: null, crossesMidnight: false });
     const { env } = environment(call("create_calendar_event", args));
     const json = await (await worker.fetch(request(body("9 AM", { pendingAction })), env)).json() as Record<string, any>;
     expect(json.type).toBe("tool_call");

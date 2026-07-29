@@ -9,12 +9,13 @@ import {
   type AssistantV2Response,
 } from "./assistant-v2-schemas";
 import type { Env } from "./types";
+import { extractEventHints } from "./calendar";
 
 const nullableString = (description: string, maxLength = 500) => ({ type: ["string", "null"], minLength: 1, maxLength, description });
 const nullableDate = (description: string) => ({ type: ["string", "null"], pattern: "^\\d{4}-\\d{2}-\\d{2}$", description });
 const nullableTime = (description: string) => ({ type: ["string", "null"], pattern: "^(?:[01]\\d|2[0-3]):[0-5]\\d$", description });
 
-export const ASSISTANT_TOOLS = [
+export const ASSISTANT_TOOL_FUNCTIONS = [
   {
     name: "create_calendar_event",
     description: "Prepare a new calendar event for user confirmation. Never execute or save it. Use null for details the user did not supply.",
@@ -90,11 +91,20 @@ export const ASSISTANT_TOOLS = [
   },
 ] as const;
 
+// GPT-OSS uses Cloudflare's current OpenAI-compatible Chat Completions tool
+// envelope. The model returns the call only; this Worker never executes it.
+export const ASSISTANT_TOOLS = ASSISTANT_TOOL_FUNCTIONS.map((definition) => ({
+  type: "function" as const,
+  function: definition,
+}));
+
 const SYSTEM_PROMPT = `You are Kairo, a concise personal planning assistant. Understand natural language, misspellings, voice-dictation errors, and filler.
 
-Use recent conversation context to resolve references such as "that", "it", "the concert", and "the trip". "Add that to my calendar" refers to the earlier described item and is never an event title. Extract every detail already supplied before asking anything. Ask only one genuinely necessary follow-up at a time. Never ask for duration when start and end are already present; calculate it yourself.
+Use recent conversation context to resolve references such as "that", "it", "the concert", and "the trip". "Add that to my calendar" refers to the earlier described item and is never an event title. Extract every detail already supplied before asking anything. Ask only one genuinely necessary follow-up at a time. Never ask for duration when start and end are already present; calculate it yourself. A clock time remains usable when introduced by casual qualifiers such as "around", "about", or "like"; for example, "around 8 PM" means 20:00. A broad period such as "morning" is not an exact time. When any clock time is supplied, set allDay to false.
 
-For an app action, call exactly one provided tool. Tool calls are proposals only. Never claim anything was added, saved, created, scheduled, or completed. Kairo only prepares an action for confirmation. Use concise cleaned titles and preserve acronyms including FIFA, F1, NBA, NFL, UFC, and BTS. Never invent a date, time, person, location, reminder, amount, or app data. Never default an unclear date to today. Resolve relative dates from the supplied currentDate and timezone. For "morning" or another imprecise time, return null for the exact time. Mark an event crossesMidnight when its end is on the next day.
+For an app action, call exactly one provided tool. Tool calls are proposals only. Never claim anything was added, saved, created, scheduled, or completed. Kairo only prepares an action for confirmation. Use concise Title Case titles and preserve acronyms including FIFA, F1, NBA, NFL, UFC, and BTS. Never invent a date, time, person, location, reminder, amount, or app data. Never default an unclear date to today. Resolve relative dates from the supplied currentDate and timezone. For "morning" or another imprecise time, return null for the exact time. Mark an event crossesMidnight when its end is on the next day.
+
+Calendar examples: "BTS concert August 6, around 8 PM to around 12 AM" means title BTS Concert, resolved August 6, startTime 20:00, endTime 00:00, allDay false, and crossesMidnight true. "New York August 7 around 10 AM, coming back around 10 PM" means title New York Trip, startTime 10:00, and endTime 22:00. "FIFA game Sunday at 3 PM till 4:45 PM" means title FIFA Game and a complete 15:00–16:45 range. Do not ask follow-ups for these complete ranges.
 
 Use create_calendar_event for events, create_task for tasks, create_savings_goal for savings goals, add_goal_contribution for contributions, and answer_schedule_question when the app must read schedule data. For ordinary questions or greetings, answer naturally without calling a tool. Keep all replies concise.`;
 
@@ -180,7 +190,25 @@ const validateResponse = (response: unknown): AssistantV2Response => {
 };
 
 export const processAssistantModelResult = (request: AssistantV2Request, result: unknown): AssistantV2Response => {
-  const calls = extractToolCalls(result);
+  const hints = extractEventHints(request.message, request.currentDate, request.timezone);
+  let calls = extractToolCalls(result);
+  const hasCalendarIntent = hints.looksLikeEvent || /\b(?:doctor|dentist)\b/i.test(request.message);
+  if (calls.length === 0 && hasCalendarIntent && (hints.hasDateExpression || hints.hasTimeExpression)) {
+    calls = [{
+      name: "create_calendar_event",
+      arguments: {
+        title: hints.title ?? null,
+        date: hints.date ?? null,
+        startTime: hints.startTime ?? null,
+        endTime: hints.endTime ?? null,
+        allDay: hints.allDay ?? (hints.hasTimeExpression ? false : null),
+        location: null,
+        notes: null,
+        reminderMinutesBefore: null,
+        crossesMidnight: Boolean(hints.crossesMidnight),
+      },
+    }];
+  }
   if (calls.length > 1) throw new Error("MODEL_RESPONSE_INVALID");
   if (calls.length === 0) {
     const reply = extractText(result);
@@ -191,7 +219,19 @@ export const processAssistantModelResult = (request: AssistantV2Request, result:
   const actionResult = assistantActionSchema.safeParse(call.name);
   if (!actionResult.success || !call.arguments || typeof call.arguments !== "object" || Array.isArray(call.arguments)) throw new Error("MODEL_RESPONSE_INVALID");
   const action = actionResult.data;
-  const current = call.arguments as Record<string, unknown>;
+  let current = call.arguments as Record<string, unknown>;
+  if (action === "create_calendar_event") {
+    const referencesPriorSubject = /\b(?:add|put|save|schedule)\s+(?:that|it)\b/i.test(request.message);
+    current = {
+      ...current,
+      ...(hints.title && hasCalendarIntent && !referencesPriorSubject ? { title: hints.title } : {}),
+      ...(hints.date ? { date: hints.date } : {}),
+      ...(hints.startTime ? { startTime: hints.startTime, allDay: false } : {}),
+      ...(hints.endTime ? { endTime: hints.endTime } : {}),
+      ...(hints.allDay ? { allDay: true, startTime: null, endTime: null, crossesMidnight: false } : {}),
+      ...(hints.crossesMidnight !== undefined ? { crossesMidnight: hints.crossesMidnight } : {}),
+    };
+  }
   if (Object.keys(current).some((key) => !allowedArgumentKeys[action].includes(key))) throw new Error("MODEL_RESPONSE_INVALID");
   for (const titleField of ["title", "goalName"] as const) {
     if (typeof current[titleField] === "string" && !current[titleField].trim()) throw new Error("MODEL_RESPONSE_INVALID");

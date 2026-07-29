@@ -206,6 +206,7 @@ export const normalizeEventTitle = (input: string) => {
 
   const interview = value.match(/^interview with (.+)$/i);
   if (interview) value = `${interview[1]} Interview`;
+  if (/^doctor(?:\s+thing)?$/i.test(value)) value = "Doctor Appointment";
   if (/\bassignment\b/i.test(value) && /\bfinish\b/i.test(value)) value = value.replace(/\bfinish(?:\s+my)?\b/i, "Complete");
   value = value
     .replace(/\bformula(?:\s+one|\s+1)?\s+game\s+to\s+watch\b/gi, "Formula 1 Race")
