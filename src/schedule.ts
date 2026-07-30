@@ -67,7 +67,7 @@ const lastScheduleQuestion = (history: ChatMessage[]): ChatMessage | undefined =
 export const isScheduleQuestion = (message: string, history: ChatMessage[] = [], allowContext = true): boolean => {
   const text = message.trim();
   if (/\b(?:add|create|block|move|reschedule|remove|delete|cancel)\b/i.test(text) && !/\b(?:what|when|how|do i have|am i)\b/i.test(text)) return false;
-  if (/\b(?:what (?:does|do|is|am)\b[\s\S]*(?:schedule|planned|doing|have)|what do i have|what am i doing|what is planned|coming up|upcoming|when am i free|how busy|busiest day|do i have time|plan around everything|review my (?:week|schedule)|show my (?:week|schedule))\b/i.test(text)) return true;
+  if (/\b(?:what (?:does|do|is|am)\b[\s\S]*(?:schedule|planned|doing|have)|what do i have|what am i doing|what is planned|coming up|upcoming|when am i free|how busy|busiest day|do i have time|plan around everything|review my (?:week|schedule)|show (?:me |my )?(?:this week|next week|week|schedule)|summari[sz]e (?:my |this |next )?(?:week|schedule)|check my schedule|help me plan (?:my |this |next )?(?:week|day))\b/i.test(text)) return true;
   return allowContext && /\bwhat about (?:the )?(?:next|following) week\b/i.test(text) && Boolean(lastScheduleQuestion(history));
 };
 

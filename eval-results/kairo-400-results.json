@@ -1,0 +1,3615 @@
+{
+  "generatedAt": "2026-07-30T21:48:58.285Z",
+  "mode": "live-sample",
+  "exactEvaluationCount": 400,
+  "distribution": {
+    "general": 20,
+    "calendar_create": 60,
+    "calendar_update": 45,
+    "calendar_delete": 40,
+    "schedule": 40,
+    "multi_intent": 70,
+    "contextual": 35,
+    "tasks": 25,
+    "goals": 20,
+    "checkins": 15,
+    "ambiguity": 30
+  },
+  "initialLiveBaseline": {
+    "total": 40,
+    "passed": 28,
+    "failed": 12,
+    "passRate": 0.7,
+    "verificationRecoveries": 1
+  },
+  "total": 40,
+  "passed": 40,
+  "failed": 0,
+  "passRate": 1,
+  "firstAttemptPassed": 40,
+  "repairAttemptPassed": 0,
+  "failingIds": [],
+  "categories": {
+    "general": {
+      "total": 10,
+      "passed": 10,
+      "passRate": 1
+    },
+    "calendar_create": {
+      "total": 3,
+      "passed": 3,
+      "passRate": 1
+    },
+    "calendar_update": {
+      "total": 3,
+      "passed": 3,
+      "passRate": 1
+    },
+    "calendar_delete": {
+      "total": 3,
+      "passed": 3,
+      "passRate": 1
+    },
+    "schedule": {
+      "total": 3,
+      "passed": 3,
+      "passRate": 1
+    },
+    "multi_intent": {
+      "total": 3,
+      "passed": 3,
+      "passRate": 1
+    },
+    "contextual": {
+      "total": 3,
+      "passed": 3,
+      "passRate": 1
+    },
+    "tasks": {
+      "total": 3,
+      "passed": 3,
+      "passRate": 1
+    },
+    "goals": {
+      "total": 3,
+      "passed": 3,
+      "passRate": 1
+    },
+    "checkins": {
+      "total": 3,
+      "passed": 3,
+      "passRate": 1
+    },
+    "ambiguity": {
+      "total": 3,
+      "passed": 3,
+      "passRate": 1
+    }
+  },
+  "results": [
+    {
+      "id": "general-001",
+      "category": "general",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "message",
+        "operationCount": 0,
+        "tools": [],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "message",
+        "tools": [],
+        "operationCount": 0,
+        "arguments": [],
+        "missingFields": [],
+        "confirmations": [],
+        "modes": [],
+        "text": "Hello! How can I help you with your planning today?"
+      },
+      "response": {
+        "ok": true,
+        "type": "message",
+        "reply": "Hello! How can I help you with your planning today?"
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "message",
+        "reply": "Hello! How can I help you with your planning today?"
+      }
+    },
+    {
+      "id": "general-002",
+      "category": "general",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "message",
+        "operationCount": 0,
+        "tools": [],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "message",
+        "tools": [],
+        "operationCount": 0,
+        "arguments": [],
+        "missingFields": [],
+        "confirmations": [],
+        "modes": [],
+        "text": "Here’s a quick framework you can use to sort out a tough week:\n\n1. **Capture everything** – List all meetings, deadlines, personal commitments, and any “just in case” items that are on your mind.  \n2. **Identify non‑negotiables** – Highlight items that must happen (e.g., a client presentation, a medical appointment). Those become your anchors.  \n3. **Assess impact & urgency** – For each remaining item, ask:\n   * *What happens if I delay or skip it?*  \n   * *Is the deadline fixed or flexible?*  \n   Rank them high‑impact/urgent, high‑impact/not urgent, low‑impact/urgent, and low‑impact/not urgent.  \n4. **Chunk similar tasks** – Group related work (e.g., all email replies, all prep for a project) and schedule dedicated blocks. This reduces context‑switching.  \n5. **Allocate buffer time** – Reserve short periods each day for unexpected issues or quick catch‑ups; it prevents the schedule from spilling over.  \n6. **Set realistic daily goals** – Choose 2–3 top priorities per day that align with your weekly anchors. Anything beyond that can be deferred or delegated.  \n7. **Review each evening** – Check what you accomplished, adjust tomorrow’s priorities, and note any new items that have surfaced.  \n\nBy repeatedly applying these steps, you’ll keep the most critical work front‑and‑center while maintaining flexibility for the inevitable surprises a difficult week brings."
+      },
+      "response": {
+        "ok": true,
+        "type": "message",
+        "reply": "Here’s a quick framework you can use to sort out a tough week:\n\n1. **Capture everything** – List all meetings, deadlines, personal commitments, and any “just in case” items that are on your mind.  \n2. **Identify non‑negotiables** – Highlight items that must happen (e.g., a client presentation, a medical appointment). Those become your anchors.  \n3. **Assess impact & urgency** – For each remaining item, ask:\n   * *What happens if I delay or skip it?*  \n   * *Is the deadline fixed or flexible?*  \n   Rank them high‑impact/urgent, high‑impact/not urgent, low‑impact/urgent, and low‑impact/not urgent.  \n4. **Chunk similar tasks** – Group related work (e.g., all email replies, all prep for a project) and schedule dedicated blocks. This reduces context‑switching.  \n5. **Allocate buffer time** – Reserve short periods each day for unexpected issues or quick catch‑ups; it prevents the schedule from spilling over.  \n6. **Set realistic daily goals** – Choose 2–3 top priorities per day that align with your weekly anchors. Anything beyond that can be deferred or delegated.  \n7. **Review each evening** – Check what you accomplished, adjust tomorrow’s priorities, and note any new items that have surfaced.  \n\nBy repeatedly applying these steps, you’ll keep the most critical work front‑and‑center while maintaining flexibility for the inevitable surprises a difficult week brings."
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "message",
+        "reply": "Here’s a quick framework you can use to sort out a tough week:\n\n1. **Capture everything** – List all meetings, deadlines, personal commitments, and any “just in case” items that are on your mind.  \n2. **Identify non‑negotiables** – Highlight items that must happen (e.g., a client presentation, a medical appointment). Those become your anchors.  \n3. **Assess impact & urgency** – For each remaining item, ask:\n   * *What happens if I delay or skip it?*  \n   * *Is the deadline fixed or flexible?*  \n   Rank them high‑impact/urgent, high‑impact/not urgent, low‑impact/urgent, and low‑impact/not urgent.  \n4. **Chunk similar tasks** – Group related work (e.g., all email replies, all prep for a project) and schedule dedicated blocks. This reduces context‑switching.  \n5. **Allocate buffer time** – Reserve short periods each day for unexpected issues or quick catch‑ups; it prevents the schedule from spilling over.  \n6. **Set realistic daily goals** – Choose 2–3 top priorities per day that align with your weekly anchors. Anything beyond that can be deferred or delegated.  \n7. **Review each evening** – Check what you accomplished, adjust tomorrow’s priorities, and note any new items that have surfaced.  \n\nBy repeatedly applying these steps, you’ll keep the most critical work front‑and‑center while maintaining flexibility for the inevitable surprises a difficult week brings."
+      }
+    },
+    {
+      "id": "general-003",
+      "category": "general",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "message",
+        "operationCount": 0,
+        "tools": [],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "message",
+        "tools": [],
+        "operationCount": 0,
+        "arguments": [],
+        "missingFields": [],
+        "confirmations": [],
+        "modes": [],
+        "text": "Focus on a single goal for the next 30 minutes: write down the exact task you want to complete, set a timer, and eliminate all distractions (e.g., turn off your phone, close unrelated tabs). Let the timer run and commit to finishing that one task before the timer ends."
+      },
+      "response": {
+        "ok": true,
+        "type": "message",
+        "reply": "Focus on a single goal for the next 30 minutes: write down the exact task you want to complete, set a timer, and eliminate all distractions (e.g., turn off your phone, close unrelated tabs). Let the timer run and commit to finishing that one task before the timer ends."
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "message",
+        "reply": "Focus on a single goal for the next 30 minutes: write down the exact task you want to complete, set a timer, and eliminate all distractions (e.g., turn off your phone, close unrelated tabs). Let the timer run and commit to finishing that one task before the timer ends."
+      }
+    },
+    {
+      "id": "calendar-create-001",
+      "category": "calendar_create",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "tool_call",
+        "operationCount": 1,
+        "tools": [
+          "create_calendar_event"
+        ],
+        "arguments": {
+          "title": "Gym",
+          "date": "2026-07-31",
+          "startTime": "18:00"
+        },
+        "missingFields": [],
+        "requiresConfirmation": true,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "tool_call",
+        "tools": [
+          "create_calendar_event"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "title": "Gym",
+            "date": "2026-07-31",
+            "startTime": "18:00",
+            "endTime": null,
+            "allDay": false,
+            "location": null,
+            "notes": null,
+            "reminderMinutesBefore": null,
+            "crossesMidnight": false
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          true
+        ],
+        "modes": [
+          "write"
+        ],
+        "text": "Kairo prepared this event for your confirmation."
+      },
+      "response": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "Kairo prepared this event for your confirmation.",
+        "toolCall": {
+          "name": "create_calendar_event",
+          "requiresConfirmation": true,
+          "arguments": {
+            "title": "Gym",
+            "date": "2026-07-31",
+            "startTime": "18:00",
+            "endTime": null,
+            "allDay": false,
+            "location": null,
+            "notes": null,
+            "reminderMinutesBefore": null,
+            "crossesMidnight": false
+          }
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "Kairo prepared this event for your confirmation.",
+        "toolCall": {
+          "name": "create_calendar_event",
+          "requiresConfirmation": true,
+          "arguments": {
+            "title": "Gym",
+            "date": "2026-07-31",
+            "startTime": "18:00",
+            "endTime": null,
+            "allDay": false,
+            "location": null,
+            "notes": null,
+            "reminderMinutesBefore": null,
+            "crossesMidnight": false
+          }
+        }
+      }
+    },
+    {
+      "id": "calendar-create-002",
+      "category": "calendar_create",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "follow_up",
+        "operationCount": 1,
+        "tools": [
+          "create_calendar_event"
+        ],
+        "arguments": {
+          "title": "Dentist Appointment",
+          "date": "2026-08-11"
+        },
+        "missingFields": [
+          "startTime"
+        ],
+        "requiresConfirmation": true,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "follow_up",
+        "tools": [
+          "create_calendar_event"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "allDay": false,
+            "crossesMidnight": false,
+            "date": "2026-08-11",
+            "title": "Dentist Appointment"
+          }
+        ],
+        "missingFields": [
+          "startTime"
+        ],
+        "confirmations": [
+          true
+        ],
+        "modes": [
+          "write"
+        ],
+        "text": "What exact time does the event for Dentist Appointment start?"
+      },
+      "response": {
+        "ok": true,
+        "type": "follow_up",
+        "reply": "What exact time does the event for Dentist Appointment start?",
+        "pendingAction": {
+          "action": "create_calendar_event",
+          "originalMessage": "Put dentist appointment next Tuesday at 2",
+          "collectedData": {
+            "allDay": false,
+            "crossesMidnight": false,
+            "date": "2026-08-11",
+            "title": "Dentist Appointment"
+          },
+          "missingFields": [
+            "startTime"
+          ],
+          "confidence": 0.9
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "follow_up",
+        "reply": "What exact time does the event for Dentist Appointment start?",
+        "pendingAction": {
+          "action": "create_calendar_event",
+          "originalMessage": "Put dentist appointment next Tuesday at 2",
+          "collectedData": {
+            "allDay": false,
+            "crossesMidnight": false,
+            "date": "2026-08-11",
+            "title": "Dentist Appointment"
+          },
+          "missingFields": [
+            "startTime"
+          ],
+          "confidence": 0.9
+        }
+      }
+    },
+    {
+      "id": "calendar-create-003",
+      "category": "calendar_create",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "tool_call",
+        "operationCount": 1,
+        "tools": [
+          "create_calendar_event"
+        ],
+        "arguments": {
+          "title": "FIFA Game",
+          "date": "2026-08-02",
+          "startTime": "15:00",
+          "endTime": "16:45"
+        },
+        "missingFields": [],
+        "requiresConfirmation": true,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "tool_call",
+        "tools": [
+          "create_calendar_event"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "title": "FIFA Game",
+            "date": "2026-08-02",
+            "startTime": "15:00",
+            "endTime": "16:45",
+            "allDay": false,
+            "location": null,
+            "notes": null,
+            "reminderMinutesBefore": null,
+            "crossesMidnight": false
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          true
+        ],
+        "modes": [
+          "write"
+        ],
+        "text": "Kairo prepared this event for your confirmation."
+      },
+      "response": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "Kairo prepared this event for your confirmation.",
+        "toolCall": {
+          "name": "create_calendar_event",
+          "requiresConfirmation": true,
+          "arguments": {
+            "title": "FIFA Game",
+            "date": "2026-08-02",
+            "startTime": "15:00",
+            "endTime": "16:45",
+            "allDay": false,
+            "location": null,
+            "notes": null,
+            "reminderMinutesBefore": null,
+            "crossesMidnight": false
+          }
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "Kairo prepared this event for your confirmation.",
+        "toolCall": {
+          "name": "create_calendar_event",
+          "requiresConfirmation": true,
+          "arguments": {
+            "title": "FIFA Game",
+            "date": "2026-08-02",
+            "startTime": "15:00",
+            "endTime": "16:45",
+            "allDay": false,
+            "location": null,
+            "notes": null,
+            "reminderMinutesBefore": null,
+            "crossesMidnight": false
+          }
+        }
+      }
+    },
+    {
+      "id": "calendar-update-001",
+      "category": "calendar_update",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "message",
+        "operationCount": 0,
+        "tools": [],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ],
+        "unsupportedCapability": "update_calendar_event"
+      },
+      "actual": {
+        "responseType": "message",
+        "tools": [],
+        "operationCount": 0,
+        "arguments": [],
+        "missingFields": [],
+        "confirmations": [],
+        "modes": [],
+        "text": "I understand that you want to update an existing calendar event, but this app version cannot prepare calendar edits safely yet. You can edit it from Calendar while keeping the original event intact."
+      },
+      "response": {
+        "ok": true,
+        "type": "message",
+        "reply": "I understand that you want to update an existing calendar event, but this app version cannot prepare calendar edits safely yet. You can edit it from Calendar while keeping the original event intact."
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "message",
+        "reply": "I understand that you want to update an existing calendar event, but this app version cannot prepare calendar edits safely yet. You can edit it from Calendar while keeping the original event intact."
+      }
+    },
+    {
+      "id": "calendar-update-002",
+      "category": "calendar_update",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "message",
+        "operationCount": 0,
+        "tools": [],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ],
+        "unsupportedCapability": "update_calendar_event"
+      },
+      "actual": {
+        "responseType": "message",
+        "tools": [],
+        "operationCount": 0,
+        "arguments": [],
+        "missingFields": [],
+        "confirmations": [],
+        "modes": [],
+        "text": "I understand that you want to update an existing calendar event, but this app version cannot prepare calendar edits safely yet. You can edit it from Calendar while keeping the original event intact."
+      },
+      "response": {
+        "ok": true,
+        "type": "message",
+        "reply": "I understand that you want to update an existing calendar event, but this app version cannot prepare calendar edits safely yet. You can edit it from Calendar while keeping the original event intact."
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "message",
+        "reply": "I understand that you want to update an existing calendar event, but this app version cannot prepare calendar edits safely yet. You can edit it from Calendar while keeping the original event intact."
+      }
+    },
+    {
+      "id": "calendar-update-003",
+      "category": "calendar_update",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "message",
+        "operationCount": 0,
+        "tools": [],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ],
+        "unsupportedCapability": "update_calendar_event"
+      },
+      "actual": {
+        "responseType": "message",
+        "tools": [],
+        "operationCount": 0,
+        "arguments": [],
+        "missingFields": [],
+        "confirmations": [],
+        "modes": [],
+        "text": "I understand that you want to update an existing calendar event, but this app version cannot prepare calendar edits safely yet. You can edit it from Calendar while keeping the original event intact."
+      },
+      "response": {
+        "ok": true,
+        "type": "message",
+        "reply": "I understand that you want to update an existing calendar event, but this app version cannot prepare calendar edits safely yet. You can edit it from Calendar while keeping the original event intact."
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "message",
+        "reply": "I understand that you want to update an existing calendar event, but this app version cannot prepare calendar edits safely yet. You can edit it from Calendar while keeping the original event intact."
+      }
+    },
+    {
+      "id": "calendar-delete-001",
+      "category": "calendar_delete",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "tool_call",
+        "operationCount": 1,
+        "tools": [
+          "delete_calendar_event"
+        ],
+        "arguments": {
+          "eventReference": {
+            "title": "Dentist Appointment"
+          }
+        },
+        "missingFields": [],
+        "requiresConfirmation": true,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "tool_call",
+        "tools": [
+          "delete_calendar_event"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "eventReference": {
+              "title": "Dentist Appointment",
+              "date": "2026-08-04",
+              "startTime": null,
+              "endTime": null,
+              "location": null
+            },
+            "reason": null
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          true
+        ],
+        "modes": [
+          "destructive"
+        ],
+        "text": "I found the event you want to remove. Please confirm before it is deleted."
+      },
+      "response": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I found the event you want to remove. Please confirm before it is deleted.",
+        "toolCall": {
+          "name": "delete_calendar_event",
+          "requiresConfirmation": true,
+          "arguments": {
+            "eventReference": {
+              "title": "Dentist Appointment",
+              "date": "2026-08-04",
+              "startTime": null,
+              "endTime": null,
+              "location": null
+            },
+            "reason": null
+          }
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I found the event you want to remove. Please confirm before it is deleted.",
+        "toolCall": {
+          "name": "delete_calendar_event",
+          "requiresConfirmation": true,
+          "arguments": {
+            "eventReference": {
+              "title": "Dentist Appointment",
+              "date": "2026-08-04",
+              "startTime": null,
+              "endTime": null,
+              "location": null
+            },
+            "reason": null
+          }
+        }
+      }
+    },
+    {
+      "id": "calendar-delete-002",
+      "category": "calendar_delete",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "tool_call",
+        "operationCount": 1,
+        "tools": [
+          "delete_calendar_event"
+        ],
+        "arguments": {
+          "eventReference": {
+            "title": "BTS Concert"
+          }
+        },
+        "missingFields": [],
+        "requiresConfirmation": true,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "tool_call",
+        "tools": [
+          "delete_calendar_event"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "eventReference": {
+              "title": "BTS Concert",
+              "date": null,
+              "startTime": null,
+              "endTime": null,
+              "location": null
+            },
+            "reason": "canceled"
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          true
+        ],
+        "modes": [
+          "destructive"
+        ],
+        "text": "I found the event you want to remove. Please confirm before it is deleted."
+      },
+      "response": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I found the event you want to remove. Please confirm before it is deleted.",
+        "toolCall": {
+          "name": "delete_calendar_event",
+          "requiresConfirmation": true,
+          "arguments": {
+            "eventReference": {
+              "title": "BTS Concert",
+              "date": null,
+              "startTime": null,
+              "endTime": null,
+              "location": null
+            },
+            "reason": "canceled"
+          }
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I found the event you want to remove. Please confirm before it is deleted.",
+        "toolCall": {
+          "name": "delete_calendar_event",
+          "requiresConfirmation": true,
+          "arguments": {
+            "eventReference": {
+              "title": "BTS Concert",
+              "date": null,
+              "startTime": null,
+              "endTime": null,
+              "location": null
+            },
+            "reason": "canceled"
+          }
+        }
+      }
+    },
+    {
+      "id": "calendar-delete-003",
+      "category": "calendar_delete",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "tool_call",
+        "operationCount": 1,
+        "tools": [
+          "delete_calendar_event"
+        ],
+        "arguments": {
+          "eventReference": {
+            "title": "FIFA Game"
+          }
+        },
+        "missingFields": [],
+        "requiresConfirmation": true,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "tool_call",
+        "tools": [
+          "delete_calendar_event"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "eventReference": {
+              "title": "FIFA Game",
+              "date": null,
+              "startTime": null,
+              "endTime": null,
+              "location": null
+            },
+            "reason": "not_attending"
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          true
+        ],
+        "modes": [
+          "destructive"
+        ],
+        "text": "I found the event you want to remove. Please confirm before it is deleted."
+      },
+      "response": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I found the event you want to remove. Please confirm before it is deleted.",
+        "toolCall": {
+          "name": "delete_calendar_event",
+          "requiresConfirmation": true,
+          "arguments": {
+            "eventReference": {
+              "title": "FIFA Game",
+              "date": null,
+              "startTime": null,
+              "endTime": null,
+              "location": null
+            },
+            "reason": "not_attending"
+          }
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I found the event you want to remove. Please confirm before it is deleted.",
+        "toolCall": {
+          "name": "delete_calendar_event",
+          "requiresConfirmation": true,
+          "arguments": {
+            "eventReference": {
+              "title": "FIFA Game",
+              "date": null,
+              "startTime": null,
+              "endTime": null,
+              "location": null
+            },
+            "reason": "not_attending"
+          }
+        }
+      }
+    },
+    {
+      "id": "schedule-001",
+      "category": "schedule",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "tool_call",
+        "operationCount": 1,
+        "tools": [
+          "answer_schedule_question"
+        ],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ],
+        "modes": [
+          "read"
+        ]
+      },
+      "actual": {
+        "responseType": "tool_call",
+        "tools": [
+          "answer_schedule_question"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "questionType": "weekly_overview",
+            "startDate": "2026-07-26",
+            "endDate": "2026-08-01",
+            "rangeLabel": "this week",
+            "includeEvents": true,
+            "includeTasks": true,
+            "includeGoalDeadlines": true,
+            "includeCompletedTasks": false
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          false
+        ],
+        "modes": [
+          "read"
+        ],
+        "text": "I’ll check that schedule."
+      },
+      "response": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I’ll check that schedule.",
+        "toolCall": {
+          "name": "answer_schedule_question",
+          "requiresConfirmation": false,
+          "arguments": {
+            "questionType": "weekly_overview",
+            "startDate": "2026-07-26",
+            "endDate": "2026-08-01",
+            "rangeLabel": "this week",
+            "includeEvents": true,
+            "includeTasks": true,
+            "includeGoalDeadlines": true,
+            "includeCompletedTasks": false
+          }
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I’ll check that schedule.",
+        "toolCall": {
+          "name": "answer_schedule_question",
+          "requiresConfirmation": false,
+          "arguments": {
+            "questionType": "weekly_overview",
+            "startDate": "2026-07-26",
+            "endDate": "2026-08-01",
+            "rangeLabel": "this week",
+            "includeEvents": true,
+            "includeTasks": true,
+            "includeGoalDeadlines": true,
+            "includeCompletedTasks": false
+          }
+        }
+      }
+    },
+    {
+      "id": "schedule-002",
+      "category": "schedule",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "tool_call",
+        "operationCount": 1,
+        "tools": [
+          "answer_schedule_question"
+        ],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ],
+        "modes": [
+          "read"
+        ]
+      },
+      "actual": {
+        "responseType": "tool_call",
+        "tools": [
+          "answer_schedule_question"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "questionType": "weekly_overview",
+            "startDate": "2026-07-28",
+            "endDate": "2026-08-03",
+            "rangeLabel": "this week",
+            "includeEvents": true,
+            "includeTasks": true,
+            "includeGoalDeadlines": false,
+            "includeCompletedTasks": false
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          false
+        ],
+        "modes": [
+          "read"
+        ],
+        "text": "I’ll check that schedule."
+      },
+      "response": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I’ll check that schedule.",
+        "toolCall": {
+          "name": "answer_schedule_question",
+          "requiresConfirmation": false,
+          "arguments": {
+            "questionType": "weekly_overview",
+            "startDate": "2026-07-28",
+            "endDate": "2026-08-03",
+            "rangeLabel": "this week",
+            "includeEvents": true,
+            "includeTasks": true,
+            "includeGoalDeadlines": false,
+            "includeCompletedTasks": false
+          }
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I’ll check that schedule.",
+        "toolCall": {
+          "name": "answer_schedule_question",
+          "requiresConfirmation": false,
+          "arguments": {
+            "questionType": "weekly_overview",
+            "startDate": "2026-07-28",
+            "endDate": "2026-08-03",
+            "rangeLabel": "this week",
+            "includeEvents": true,
+            "includeTasks": true,
+            "includeGoalDeadlines": false,
+            "includeCompletedTasks": false
+          }
+        }
+      }
+    },
+    {
+      "id": "schedule-003",
+      "category": "schedule",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "tool_call",
+        "operationCount": 1,
+        "tools": [
+          "answer_schedule_question"
+        ],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ],
+        "modes": [
+          "read"
+        ]
+      },
+      "actual": {
+        "responseType": "tool_call",
+        "tools": [
+          "answer_schedule_question"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "questionType": "weekly_overview",
+            "startDate": "2026-08-02",
+            "endDate": "2026-08-08",
+            "rangeLabel": "next week",
+            "includeEvents": true,
+            "includeTasks": true,
+            "includeGoalDeadlines": true,
+            "includeCompletedTasks": false
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          false
+        ],
+        "modes": [
+          "read"
+        ],
+        "text": "I’ll check that schedule."
+      },
+      "response": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I’ll check that schedule.",
+        "toolCall": {
+          "name": "answer_schedule_question",
+          "requiresConfirmation": false,
+          "arguments": {
+            "questionType": "weekly_overview",
+            "startDate": "2026-08-02",
+            "endDate": "2026-08-08",
+            "rangeLabel": "next week",
+            "includeEvents": true,
+            "includeTasks": true,
+            "includeGoalDeadlines": true,
+            "includeCompletedTasks": false
+          }
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I’ll check that schedule.",
+        "toolCall": {
+          "name": "answer_schedule_question",
+          "requiresConfirmation": false,
+          "arguments": {
+            "questionType": "weekly_overview",
+            "startDate": "2026-08-02",
+            "endDate": "2026-08-08",
+            "rangeLabel": "next week",
+            "includeEvents": true,
+            "includeTasks": true,
+            "includeGoalDeadlines": true,
+            "includeCompletedTasks": false
+          }
+        }
+      }
+    },
+    {
+      "id": "multi-001",
+      "category": "multi_intent",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "plan",
+        "operationCount": 2,
+        "tools": [
+          "create_calendar_event",
+          "create_calendar_event"
+        ],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": true,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ],
+        "dependencies": [
+          [],
+          []
+        ]
+      },
+      "actual": {
+        "responseType": "plan",
+        "tools": [
+          "create_calendar_event",
+          "create_calendar_event"
+        ],
+        "operationCount": 2,
+        "arguments": [
+          {
+            "title": "Gym",
+            "date": "2026-07-31",
+            "startTime": "18:00",
+            "endTime": null,
+            "allDay": false,
+            "location": null,
+            "notes": null,
+            "reminderMinutesBefore": null,
+            "crossesMidnight": false
+          },
+          {
+            "title": "Event Church",
+            "date": "2026-08-09",
+            "startTime": "10:00",
+            "endTime": null,
+            "allDay": false,
+            "location": null,
+            "notes": null,
+            "reminderMinutesBefore": null,
+            "crossesMidnight": false
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          true,
+          true
+        ],
+        "modes": [
+          "write",
+          "write"
+        ],
+        "dependencies": [
+          [],
+          []
+        ],
+        "text": "I separated this into 2 steps for your review."
+      },
+      "response": {
+        "ok": true,
+        "type": "plan",
+        "reply": "I separated this into 2 steps for your review.",
+        "plan": {
+          "id": "plan-vysw4h",
+          "title": "Kairo request plan",
+          "operations": [
+            {
+              "id": "operation-1",
+              "tool": "create_calendar_event",
+              "mode": "write",
+              "requiresConfirmation": true,
+              "arguments": {
+                "title": "Gym",
+                "date": "2026-07-31",
+                "startTime": "18:00",
+                "endTime": null,
+                "allDay": false,
+                "location": null,
+                "notes": null,
+                "reminderMinutesBefore": null,
+                "crossesMidnight": false
+              },
+              "sourceText": "Add gym tomorrow at 6 PM",
+              "confidence": 0.95,
+              "dependsOn": [],
+              "status": "ready"
+            },
+            {
+              "id": "operation-2",
+              "tool": "create_calendar_event",
+              "mode": "write",
+              "requiresConfirmation": true,
+              "arguments": {
+                "title": "Event Church",
+                "date": "2026-08-09",
+                "startTime": "10:00",
+                "endTime": null,
+                "allDay": false,
+                "location": null,
+                "notes": null,
+                "reminderMinutesBefore": null,
+                "crossesMidnight": false
+              },
+              "sourceText": "Add an event church next Sunday at 10 AM",
+              "confidence": 0.95,
+              "dependsOn": [],
+              "status": "ready"
+            }
+          ]
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "plan",
+        "reply": "I separated this into 2 steps for your review.",
+        "plan": {
+          "id": "plan-vysw4h",
+          "title": "Kairo request plan",
+          "operations": [
+            {
+              "id": "operation-1",
+              "tool": "create_calendar_event",
+              "mode": "write",
+              "requiresConfirmation": true,
+              "arguments": {
+                "title": "Gym",
+                "date": "2026-07-31",
+                "startTime": "18:00",
+                "endTime": null,
+                "allDay": false,
+                "location": null,
+                "notes": null,
+                "reminderMinutesBefore": null,
+                "crossesMidnight": false
+              },
+              "sourceText": "Add gym tomorrow at 6 PM",
+              "confidence": 0.95,
+              "dependsOn": [],
+              "status": "ready"
+            },
+            {
+              "id": "operation-2",
+              "tool": "create_calendar_event",
+              "mode": "write",
+              "requiresConfirmation": true,
+              "arguments": {
+                "title": "Event Church",
+                "date": "2026-08-09",
+                "startTime": "10:00",
+                "endTime": null,
+                "allDay": false,
+                "location": null,
+                "notes": null,
+                "reminderMinutesBefore": null,
+                "crossesMidnight": false
+              },
+              "sourceText": "Add an event church next Sunday at 10 AM",
+              "confidence": 0.95,
+              "dependsOn": [],
+              "status": "ready"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "multi-002",
+      "category": "multi_intent",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "plan",
+        "operationCount": 4,
+        "tools": [
+          "create_calendar_event",
+          "create_calendar_event",
+          "delete_calendar_event",
+          "answer_schedule_question"
+        ],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": true,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ],
+        "dependencies": [
+          [],
+          [],
+          [],
+          []
+        ]
+      },
+      "actual": {
+        "responseType": "plan",
+        "tools": [
+          "create_calendar_event",
+          "create_calendar_event",
+          "delete_calendar_event",
+          "answer_schedule_question"
+        ],
+        "operationCount": 4,
+        "arguments": [
+          {
+            "title": "Gym",
+            "date": "2026-08-04",
+            "startTime": "18:00",
+            "endTime": null,
+            "allDay": false,
+            "location": null,
+            "notes": null,
+            "reminderMinutesBefore": null,
+            "crossesMidnight": false
+          },
+          {
+            "title": "Dentist",
+            "date": "2026-08-05",
+            "startTime": "14:00",
+            "endTime": null,
+            "allDay": false,
+            "location": null,
+            "notes": null,
+            "reminderMinutesBefore": null,
+            "crossesMidnight": false
+          },
+          {
+            "eventReference": {
+              "title": "FIFA Game",
+              "date": null,
+              "startTime": null,
+              "endTime": null,
+              "location": null
+            },
+            "reason": "user_requested"
+          },
+          {
+            "questionType": "weekly_overview",
+            "startDate": "2026-08-02",
+            "endDate": "2026-08-08",
+            "rangeLabel": "next week",
+            "includeEvents": true,
+            "includeTasks": true,
+            "includeGoalDeadlines": true,
+            "includeCompletedTasks": false
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          true,
+          true,
+          true,
+          false
+        ],
+        "modes": [
+          "write",
+          "write",
+          "destructive",
+          "read"
+        ],
+        "dependencies": [
+          [],
+          [],
+          [],
+          []
+        ],
+        "text": "I separated this into 4 steps for your review."
+      },
+      "response": {
+        "ok": true,
+        "type": "plan",
+        "reply": "I separated this into 4 steps for your review.",
+        "plan": {
+          "id": "plan-tfcdaz",
+          "title": "Kairo request plan",
+          "operations": [
+            {
+              "id": "operation-1",
+              "tool": "create_calendar_event",
+              "mode": "write",
+              "requiresConfirmation": true,
+              "arguments": {
+                "title": "Gym",
+                "date": "2026-08-04",
+                "startTime": "18:00",
+                "endTime": null,
+                "allDay": false,
+                "location": null,
+                "notes": null,
+                "reminderMinutesBefore": null,
+                "crossesMidnight": false
+              },
+              "sourceText": "Add gym Tuesday at 6 PM",
+              "confidence": 0.95,
+              "dependsOn": [],
+              "status": "ready"
+            },
+            {
+              "id": "operation-2",
+              "tool": "create_calendar_event",
+              "mode": "write",
+              "requiresConfirmation": true,
+              "arguments": {
+                "title": "Dentist",
+                "date": "2026-08-05",
+                "startTime": "14:00",
+                "endTime": null,
+                "allDay": false,
+                "location": null,
+                "notes": null,
+                "reminderMinutesBefore": null,
+                "crossesMidnight": false
+              },
+              "sourceText": "add dentist Wednesday at 2 PM",
+              "confidence": 0.95,
+              "dependsOn": [],
+              "status": "ready"
+            },
+            {
+              "id": "operation-3",
+              "tool": "delete_calendar_event",
+              "mode": "destructive",
+              "requiresConfirmation": true,
+              "arguments": {
+                "eventReference": {
+                  "title": "FIFA Game",
+                  "date": null,
+                  "startTime": null,
+                  "endTime": null,
+                  "location": null
+                },
+                "reason": "user_requested"
+              },
+              "sourceText": "remove the FIFA game Friday",
+              "confidence": 0.95,
+              "dependsOn": [],
+              "status": "ready"
+            },
+            {
+              "id": "operation-4",
+              "tool": "answer_schedule_question",
+              "mode": "read",
+              "requiresConfirmation": false,
+              "arguments": {
+                "questionType": "weekly_overview",
+                "startDate": "2026-08-02",
+                "endDate": "2026-08-08",
+                "rangeLabel": "next week",
+                "includeEvents": true,
+                "includeTasks": true,
+                "includeGoalDeadlines": true,
+                "includeCompletedTasks": false
+              },
+              "sourceText": "show me next week",
+              "confidence": 0.95,
+              "dependsOn": [],
+              "status": "ready"
+            }
+          ]
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "plan",
+        "reply": "I separated this into 4 steps for your review.",
+        "plan": {
+          "id": "plan-tfcdaz",
+          "title": "Kairo request plan",
+          "operations": [
+            {
+              "id": "operation-1",
+              "tool": "create_calendar_event",
+              "mode": "write",
+              "requiresConfirmation": true,
+              "arguments": {
+                "title": "Gym",
+                "date": "2026-08-04",
+                "startTime": "18:00",
+                "endTime": null,
+                "allDay": false,
+                "location": null,
+                "notes": null,
+                "reminderMinutesBefore": null,
+                "crossesMidnight": false
+              },
+              "sourceText": "Add gym Tuesday at 6 PM",
+              "confidence": 0.95,
+              "dependsOn": [],
+              "status": "ready"
+            },
+            {
+              "id": "operation-2",
+              "tool": "create_calendar_event",
+              "mode": "write",
+              "requiresConfirmation": true,
+              "arguments": {
+                "title": "Dentist",
+                "date": "2026-08-05",
+                "startTime": "14:00",
+                "endTime": null,
+                "allDay": false,
+                "location": null,
+                "notes": null,
+                "reminderMinutesBefore": null,
+                "crossesMidnight": false
+              },
+              "sourceText": "add dentist Wednesday at 2 PM",
+              "confidence": 0.95,
+              "dependsOn": [],
+              "status": "ready"
+            },
+            {
+              "id": "operation-3",
+              "tool": "delete_calendar_event",
+              "mode": "destructive",
+              "requiresConfirmation": true,
+              "arguments": {
+                "eventReference": {
+                  "title": "FIFA Game",
+                  "date": null,
+                  "startTime": null,
+                  "endTime": null,
+                  "location": null
+                },
+                "reason": "user_requested"
+              },
+              "sourceText": "remove the FIFA game Friday",
+              "confidence": 0.95,
+              "dependsOn": [],
+              "status": "ready"
+            },
+            {
+              "id": "operation-4",
+              "tool": "answer_schedule_question",
+              "mode": "read",
+              "requiresConfirmation": false,
+              "arguments": {
+                "questionType": "weekly_overview",
+                "startDate": "2026-08-02",
+                "endDate": "2026-08-08",
+                "rangeLabel": "next week",
+                "includeEvents": true,
+                "includeTasks": true,
+                "includeGoalDeadlines": true,
+                "includeCompletedTasks": false
+              },
+              "sourceText": "show me next week",
+              "confidence": 0.95,
+              "dependsOn": [],
+              "status": "ready"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "multi-003",
+      "category": "multi_intent",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "plan",
+        "operationCount": 2,
+        "tools": [
+          "create_calendar_event",
+          "create_calendar_event"
+        ],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": true,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ],
+        "dependencies": [
+          [],
+          []
+        ]
+      },
+      "actual": {
+        "responseType": "plan",
+        "tools": [
+          "create_calendar_event",
+          "create_calendar_event"
+        ],
+        "operationCount": 2,
+        "arguments": [
+          {
+            "title": "Lunch",
+            "date": "2026-07-31",
+            "startTime": "12:00",
+            "endTime": null,
+            "allDay": false,
+            "location": null,
+            "notes": null,
+            "reminderMinutesBefore": null,
+            "crossesMidnight": false
+          },
+          {
+            "title": "Event Dinner But Do Not The Gym Event",
+            "date": "2026-07-31",
+            "startTime": "19:00",
+            "endTime": null,
+            "allDay": false,
+            "location": null,
+            "notes": null,
+            "reminderMinutesBefore": null,
+            "crossesMidnight": false
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          true,
+          true
+        ],
+        "modes": [
+          "write",
+          "write"
+        ],
+        "dependencies": [
+          [],
+          []
+        ],
+        "text": "I separated this into 2 steps for your review."
+      },
+      "response": {
+        "ok": true,
+        "type": "plan",
+        "reply": "I separated this into 2 steps for your review.",
+        "plan": {
+          "id": "plan-1wvanc9",
+          "title": "Kairo request plan",
+          "operations": [
+            {
+              "id": "operation-1",
+              "tool": "create_calendar_event",
+              "mode": "write",
+              "requiresConfirmation": true,
+              "arguments": {
+                "title": "Lunch",
+                "date": "2026-07-31",
+                "startTime": "12:00",
+                "endTime": null,
+                "allDay": false,
+                "location": null,
+                "notes": null,
+                "reminderMinutesBefore": null,
+                "crossesMidnight": false
+              },
+              "sourceText": "Add lunch tomorrow at noon",
+              "confidence": 0.95,
+              "dependsOn": [],
+              "status": "ready"
+            },
+            {
+              "id": "operation-2",
+              "tool": "create_calendar_event",
+              "mode": "write",
+              "requiresConfirmation": true,
+              "arguments": {
+                "title": "Event Dinner But Do Not The Gym Event",
+                "date": "2026-07-31",
+                "startTime": "19:00",
+                "endTime": null,
+                "allDay": false,
+                "location": null,
+                "notes": null,
+                "reminderMinutesBefore": null,
+                "crossesMidnight": false
+              },
+              "sourceText": "Add an event dinner Friday at 7 PM, but do not add the gym event",
+              "confidence": 0.95,
+              "dependsOn": [],
+              "status": "ready"
+            }
+          ]
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "plan",
+        "reply": "I separated this into 2 steps for your review.",
+        "plan": {
+          "id": "plan-1wvanc9",
+          "title": "Kairo request plan",
+          "operations": [
+            {
+              "id": "operation-1",
+              "tool": "create_calendar_event",
+              "mode": "write",
+              "requiresConfirmation": true,
+              "arguments": {
+                "title": "Lunch",
+                "date": "2026-07-31",
+                "startTime": "12:00",
+                "endTime": null,
+                "allDay": false,
+                "location": null,
+                "notes": null,
+                "reminderMinutesBefore": null,
+                "crossesMidnight": false
+              },
+              "sourceText": "Add lunch tomorrow at noon",
+              "confidence": 0.95,
+              "dependsOn": [],
+              "status": "ready"
+            },
+            {
+              "id": "operation-2",
+              "tool": "create_calendar_event",
+              "mode": "write",
+              "requiresConfirmation": true,
+              "arguments": {
+                "title": "Event Dinner But Do Not The Gym Event",
+                "date": "2026-07-31",
+                "startTime": "19:00",
+                "endTime": null,
+                "allDay": false,
+                "location": null,
+                "notes": null,
+                "reminderMinutesBefore": null,
+                "crossesMidnight": false
+              },
+              "sourceText": "Add an event dinner Friday at 7 PM, but do not add the gym event",
+              "confidence": 0.95,
+              "dependsOn": [],
+              "status": "ready"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "context-001",
+      "category": "contextual",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "tool_call",
+        "operationCount": 1,
+        "tools": [
+          "create_calendar_event"
+        ],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": true,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "tool_call",
+        "tools": [
+          "create_calendar_event"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "title": "Dentist Appointment",
+            "date": "2026-08-04",
+            "startTime": "14:00",
+            "endTime": null,
+            "allDay": false,
+            "location": null,
+            "notes": null,
+            "reminderMinutesBefore": null,
+            "crossesMidnight": false
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          true
+        ],
+        "modes": [
+          "write"
+        ],
+        "text": "Kairo prepared this event for your confirmation."
+      },
+      "response": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "Kairo prepared this event for your confirmation.",
+        "toolCall": {
+          "name": "create_calendar_event",
+          "requiresConfirmation": true,
+          "arguments": {
+            "title": "Dentist Appointment",
+            "date": "2026-08-04",
+            "startTime": "14:00",
+            "endTime": null,
+            "allDay": false,
+            "location": null,
+            "notes": null,
+            "reminderMinutesBefore": null,
+            "crossesMidnight": false
+          }
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "Kairo prepared this event for your confirmation.",
+        "toolCall": {
+          "name": "create_calendar_event",
+          "requiresConfirmation": true,
+          "arguments": {
+            "title": "Dentist Appointment",
+            "date": "2026-08-04",
+            "startTime": "14:00",
+            "endTime": null,
+            "allDay": false,
+            "location": null,
+            "notes": null,
+            "reminderMinutesBefore": null,
+            "crossesMidnight": false
+          }
+        }
+      }
+    },
+    {
+      "id": "context-002",
+      "category": "contextual",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "message",
+        "operationCount": 0,
+        "tools": [],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ],
+        "unsupportedCapability": "update_calendar_event"
+      },
+      "actual": {
+        "responseType": "message",
+        "tools": [],
+        "operationCount": 0,
+        "arguments": [],
+        "missingFields": [],
+        "confirmations": [],
+        "modes": [],
+        "text": "I understand that you want to update an existing calendar event, but this app version cannot prepare calendar edits safely yet. You can edit it from Calendar while keeping the original event intact."
+      },
+      "response": {
+        "ok": true,
+        "type": "message",
+        "reply": "I understand that you want to update an existing calendar event, but this app version cannot prepare calendar edits safely yet. You can edit it from Calendar while keeping the original event intact."
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "message",
+        "reply": "I understand that you want to update an existing calendar event, but this app version cannot prepare calendar edits safely yet. You can edit it from Calendar while keeping the original event intact."
+      }
+    },
+    {
+      "id": "context-003",
+      "category": "contextual",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "message",
+        "operationCount": 0,
+        "tools": [],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "message",
+        "tools": [],
+        "operationCount": 0,
+        "arguments": [],
+        "missingFields": [],
+        "confirmations": [],
+        "modes": [],
+        "text": "Got it—so you’d like to add the 4 PM appointment. Could you tell me the date, a title for the event, and any location or notes you’d like included?"
+      },
+      "response": {
+        "ok": true,
+        "type": "message",
+        "reply": "Got it—so you’d like to add the 4 PM appointment. Could you tell me the date, a title for the event, and any location or notes you’d like included?"
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "message",
+        "reply": "Got it—so you’d like to add the 4 PM appointment. Could you tell me the date, a title for the event, and any location or notes you’d like included?"
+      }
+    },
+    {
+      "id": "task-001",
+      "category": "tasks",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "tool_call",
+        "operationCount": 1,
+        "tools": [
+          "create_task"
+        ],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": true,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "tool_call",
+        "tools": [
+          "create_task"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "title": "Submit My Database Assignment Friday At 5 Pm High Priority, About Two Hours",
+            "description": null,
+            "dueDate": "2026-07-31",
+            "dueTime": "17:00",
+            "priority": "high",
+            "estimatedMinutes": 120,
+            "notes": null
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          true
+        ],
+        "modes": [
+          "write"
+        ],
+        "text": "Kairo prepared this task for your confirmation."
+      },
+      "response": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "Kairo prepared this task for your confirmation.",
+        "toolCall": {
+          "name": "create_task",
+          "requiresConfirmation": true,
+          "arguments": {
+            "title": "Submit My Database Assignment Friday At 5 Pm High Priority, About Two Hours",
+            "description": null,
+            "dueDate": "2026-07-31",
+            "dueTime": "17:00",
+            "priority": "high",
+            "estimatedMinutes": 120,
+            "notes": null
+          }
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "Kairo prepared this task for your confirmation.",
+        "toolCall": {
+          "name": "create_task",
+          "requiresConfirmation": true,
+          "arguments": {
+            "title": "Submit My Database Assignment Friday At 5 Pm High Priority, About Two Hours",
+            "description": null,
+            "dueDate": "2026-07-31",
+            "dueTime": "17:00",
+            "priority": "high",
+            "estimatedMinutes": 120,
+            "notes": null
+          }
+        }
+      }
+    },
+    {
+      "id": "task-002",
+      "category": "tasks",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "tool_call",
+        "operationCount": 1,
+        "tools": [
+          "create_task"
+        ],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": true,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "tool_call",
+        "tools": [
+          "create_task"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "title": "Buy Groceries",
+            "description": "Buy groceries",
+            "dueDate": "2026-07-31",
+            "dueTime": null,
+            "priority": null,
+            "estimatedMinutes": null,
+            "notes": null
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          true
+        ],
+        "modes": [
+          "write"
+        ],
+        "text": "Kairo prepared this task for your confirmation."
+      },
+      "response": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "Kairo prepared this task for your confirmation.",
+        "toolCall": {
+          "name": "create_task",
+          "requiresConfirmation": true,
+          "arguments": {
+            "title": "Buy Groceries",
+            "description": "Buy groceries",
+            "dueDate": "2026-07-31",
+            "dueTime": null,
+            "priority": null,
+            "estimatedMinutes": null,
+            "notes": null
+          }
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "Kairo prepared this task for your confirmation.",
+        "toolCall": {
+          "name": "create_task",
+          "requiresConfirmation": true,
+          "arguments": {
+            "title": "Buy Groceries",
+            "description": "Buy groceries",
+            "dueDate": "2026-07-31",
+            "dueTime": null,
+            "priority": null,
+            "estimatedMinutes": null,
+            "notes": null
+          }
+        }
+      }
+    },
+    {
+      "id": "task-003",
+      "category": "tasks",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "tool_call",
+        "operationCount": 1,
+        "tools": [
+          "create_task"
+        ],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": true,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "tool_call",
+        "tools": [
+          "create_task"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "title": "Call Mom",
+            "description": "Call Mom",
+            "dueDate": "2026-08-01",
+            "dueTime": null,
+            "priority": null,
+            "estimatedMinutes": null,
+            "notes": null
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          true
+        ],
+        "modes": [
+          "write"
+        ],
+        "text": "Kairo prepared this task for your confirmation."
+      },
+      "response": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "Kairo prepared this task for your confirmation.",
+        "toolCall": {
+          "name": "create_task",
+          "requiresConfirmation": true,
+          "arguments": {
+            "title": "Call Mom",
+            "description": "Call Mom",
+            "dueDate": "2026-08-01",
+            "dueTime": null,
+            "priority": null,
+            "estimatedMinutes": null,
+            "notes": null
+          }
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "Kairo prepared this task for your confirmation.",
+        "toolCall": {
+          "name": "create_task",
+          "requiresConfirmation": true,
+          "arguments": {
+            "title": "Call Mom",
+            "description": "Call Mom",
+            "dueDate": "2026-08-01",
+            "dueTime": null,
+            "priority": null,
+            "estimatedMinutes": null,
+            "notes": null
+          }
+        }
+      }
+    },
+    {
+      "id": "goal-001",
+      "category": "goals",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "tool_call",
+        "operationCount": 1,
+        "tools": [
+          "create_savings_goal"
+        ],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": true,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "tool_call",
+        "tools": [
+          "create_savings_goal"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "title": "New Laptop",
+            "targetAmount": 2000,
+            "startingAmount": 200,
+            "targetDate": null,
+            "description": "New Laptop"
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          true
+        ],
+        "modes": [
+          "write"
+        ],
+        "text": "Kairo prepared this savings goal for your confirmation."
+      },
+      "response": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "Kairo prepared this savings goal for your confirmation.",
+        "toolCall": {
+          "name": "create_savings_goal",
+          "requiresConfirmation": true,
+          "arguments": {
+            "title": "New Laptop",
+            "targetAmount": 2000,
+            "startingAmount": 200,
+            "targetDate": null,
+            "description": "New Laptop"
+          }
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "Kairo prepared this savings goal for your confirmation.",
+        "toolCall": {
+          "name": "create_savings_goal",
+          "requiresConfirmation": true,
+          "arguments": {
+            "title": "New Laptop",
+            "targetAmount": 2000,
+            "startingAmount": 200,
+            "targetDate": null,
+            "description": "New Laptop"
+          }
+        }
+      }
+    },
+    {
+      "id": "goal-002",
+      "category": "goals",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "tool_call",
+        "operationCount": 1,
+        "tools": [
+          "add_goal_contribution"
+        ],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": true,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "tool_call",
+        "tools": [
+          "add_goal_contribution"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "goalName": "laptop",
+            "amount": 50,
+            "date": "2026-07-30",
+            "note": null
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          true
+        ],
+        "modes": [
+          "write"
+        ],
+        "text": "Kairo prepared this contribution for your confirmation."
+      },
+      "response": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "Kairo prepared this contribution for your confirmation.",
+        "toolCall": {
+          "name": "add_goal_contribution",
+          "requiresConfirmation": true,
+          "arguments": {
+            "goalName": "laptop",
+            "amount": 50,
+            "date": "2026-07-30",
+            "note": null
+          }
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "Kairo prepared this contribution for your confirmation.",
+        "toolCall": {
+          "name": "add_goal_contribution",
+          "requiresConfirmation": true,
+          "arguments": {
+            "goalName": "laptop",
+            "amount": 50,
+            "date": "2026-07-30",
+            "note": null
+          }
+        }
+      }
+    },
+    {
+      "id": "goal-003",
+      "category": "goals",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "tool_call",
+        "operationCount": 1,
+        "tools": [
+          "read_savings_progress"
+        ],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "tool_call",
+        "tools": [
+          "read_savings_progress"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "goalName": null,
+            "includeAllActiveGoals": true,
+            "includeCompletedGoals": false
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          false
+        ],
+        "modes": [
+          "read"
+        ],
+        "text": "I’ll check your active savings progress."
+      },
+      "response": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I’ll check your active savings progress.",
+        "toolCall": {
+          "name": "read_savings_progress",
+          "requiresConfirmation": false,
+          "arguments": {
+            "goalName": null,
+            "includeAllActiveGoals": true,
+            "includeCompletedGoals": false
+          }
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I’ll check your active savings progress.",
+        "toolCall": {
+          "name": "read_savings_progress",
+          "requiresConfirmation": false,
+          "arguments": {
+            "goalName": null,
+            "includeAllActiveGoals": true,
+            "includeCompletedGoals": false
+          }
+        }
+      }
+    },
+    {
+      "id": "checkin-001",
+      "category": "checkins",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "tool_call",
+        "operationCount": 1,
+        "tools": [
+          "generate_daily_briefing"
+        ],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ],
+        "modes": [
+          "read"
+        ]
+      },
+      "actual": {
+        "responseType": "tool_call",
+        "tools": [
+          "generate_daily_briefing"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "period": "today",
+            "includeSchedule": true,
+            "includeSavingsProgress": true,
+            "includeCheckInInsights": true
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          false
+        ],
+        "modes": [
+          "read"
+        ],
+        "text": "I’ll prepare a briefing from your local schedule, goals, and check-in summary."
+      },
+      "response": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I’ll prepare a briefing from your local schedule, goals, and check-in summary.",
+        "toolCall": {
+          "name": "generate_daily_briefing",
+          "requiresConfirmation": false,
+          "arguments": {
+            "period": "today",
+            "includeSchedule": true,
+            "includeSavingsProgress": true,
+            "includeCheckInInsights": true
+          }
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I’ll prepare a briefing from your local schedule, goals, and check-in summary.",
+        "toolCall": {
+          "name": "generate_daily_briefing",
+          "requiresConfirmation": false,
+          "arguments": {
+            "period": "today",
+            "includeSchedule": true,
+            "includeSavingsProgress": true,
+            "includeCheckInInsights": true
+          }
+        }
+      }
+    },
+    {
+      "id": "checkin-002",
+      "category": "checkins",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "tool_call",
+        "operationCount": 1,
+        "tools": [
+          "read_checkin_insights"
+        ],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ],
+        "modes": [
+          "read"
+        ]
+      },
+      "actual": {
+        "responseType": "tool_call",
+        "tools": [
+          "read_checkin_insights"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "range": "14_days",
+            "includeWeekdayPatterns": true,
+            "includeCurrentCheckIn": true
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          false
+        ],
+        "modes": [
+          "read"
+        ],
+        "text": "I’ll look at your recent check-in patterns."
+      },
+      "response": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I’ll look at your recent check-in patterns.",
+        "toolCall": {
+          "name": "read_checkin_insights",
+          "requiresConfirmation": false,
+          "arguments": {
+            "range": "14_days",
+            "includeWeekdayPatterns": true,
+            "includeCurrentCheckIn": true
+          }
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I’ll look at your recent check-in patterns.",
+        "toolCall": {
+          "name": "read_checkin_insights",
+          "requiresConfirmation": false,
+          "arguments": {
+            "range": "14_days",
+            "includeWeekdayPatterns": true,
+            "includeCurrentCheckIn": true
+          }
+        }
+      }
+    },
+    {
+      "id": "checkin-003",
+      "category": "checkins",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "tool_call",
+        "operationCount": 1,
+        "tools": [
+          "read_checkin_insights"
+        ],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ],
+        "modes": [
+          "read"
+        ]
+      },
+      "actual": {
+        "responseType": "tool_call",
+        "tools": [
+          "read_checkin_insights"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "range": "30_days",
+            "includeWeekdayPatterns": true,
+            "includeCurrentCheckIn": true
+          }
+        ],
+        "missingFields": [],
+        "confirmations": [
+          false
+        ],
+        "modes": [
+          "read"
+        ],
+        "text": "I’ll look at your recent check-in patterns."
+      },
+      "response": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I’ll look at your recent check-in patterns.",
+        "toolCall": {
+          "name": "read_checkin_insights",
+          "requiresConfirmation": false,
+          "arguments": {
+            "range": "30_days",
+            "includeWeekdayPatterns": true,
+            "includeCurrentCheckIn": true
+          }
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "tool_call",
+        "reply": "I’ll look at your recent check-in patterns.",
+        "toolCall": {
+          "name": "read_checkin_insights",
+          "requiresConfirmation": false,
+          "arguments": {
+            "range": "30_days",
+            "includeWeekdayPatterns": true,
+            "includeCurrentCheckIn": true
+          }
+        }
+      }
+    },
+    {
+      "id": "ambiguity-001",
+      "category": "ambiguity",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "follow_up",
+        "operationCount": 1,
+        "tools": [
+          "create_calendar_event"
+        ],
+        "arguments": {},
+        "missingFields": [
+          "title",
+          "date",
+          "allDayOrStartTime"
+        ],
+        "requiresConfirmation": true,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "follow_up",
+        "tools": [
+          "create_calendar_event"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "crossesMidnight": false
+          }
+        ],
+        "missingFields": [
+          "title",
+          "date",
+          "allDayOrStartTime"
+        ],
+        "confirmations": [
+          true
+        ],
+        "modes": [
+          "write"
+        ],
+        "text": "What should I call this event?"
+      },
+      "response": {
+        "ok": true,
+        "type": "follow_up",
+        "reply": "What should I call this event?",
+        "pendingAction": {
+          "action": "create_calendar_event",
+          "originalMessage": "Add an event",
+          "collectedData": {
+            "crossesMidnight": false
+          },
+          "missingFields": [
+            "title",
+            "date",
+            "allDayOrStartTime"
+          ],
+          "confidence": 0.9
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "follow_up",
+        "reply": "What should I call this event?",
+        "pendingAction": {
+          "action": "create_calendar_event",
+          "originalMessage": "Add an event",
+          "collectedData": {
+            "crossesMidnight": false
+          },
+          "missingFields": [
+            "title",
+            "date",
+            "allDayOrStartTime"
+          ],
+          "confidence": 0.9
+        }
+      }
+    },
+    {
+      "id": "ambiguity-002",
+      "category": "ambiguity",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "follow_up",
+        "operationCount": 1,
+        "tools": [
+          "create_calendar_event"
+        ],
+        "arguments": {},
+        "missingFields": [
+          "date",
+          "allDayOrStartTime"
+        ],
+        "requiresConfirmation": true,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "follow_up",
+        "tools": [
+          "create_calendar_event"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "title": "Gym",
+            "crossesMidnight": false
+          }
+        ],
+        "missingFields": [
+          "date",
+          "allDayOrStartTime"
+        ],
+        "confirmations": [
+          true
+        ],
+        "modes": [
+          "write"
+        ],
+        "text": "What date is the event for Gym?"
+      },
+      "response": {
+        "ok": true,
+        "type": "follow_up",
+        "reply": "What date is the event for Gym?",
+        "pendingAction": {
+          "action": "create_calendar_event",
+          "originalMessage": "Add gym",
+          "collectedData": {
+            "title": "Gym",
+            "crossesMidnight": false
+          },
+          "missingFields": [
+            "date",
+            "allDayOrStartTime"
+          ],
+          "confidence": 0.9
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "follow_up",
+        "reply": "What date is the event for Gym?",
+        "pendingAction": {
+          "action": "create_calendar_event",
+          "originalMessage": "Add gym",
+          "collectedData": {
+            "title": "Gym",
+            "crossesMidnight": false
+          },
+          "missingFields": [
+            "date",
+            "allDayOrStartTime"
+          ],
+          "confidence": 0.9
+        }
+      }
+    },
+    {
+      "id": "ambiguity-003",
+      "category": "ambiguity",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "follow_up",
+        "operationCount": 1,
+        "tools": [
+          "create_calendar_event"
+        ],
+        "arguments": {},
+        "missingFields": [
+          "allDayOrStartTime"
+        ],
+        "requiresConfirmation": true,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "follow_up",
+        "tools": [
+          "create_calendar_event"
+        ],
+        "operationCount": 1,
+        "arguments": [
+          {
+            "crossesMidnight": false,
+            "date": "2026-07-31",
+            "title": "Gym"
+          }
+        ],
+        "missingFields": [
+          "allDayOrStartTime"
+        ],
+        "confirmations": [
+          true
+        ],
+        "modes": [
+          "write"
+        ],
+        "text": "Is the event for Gym all day, or what exact time does it start?"
+      },
+      "response": {
+        "ok": true,
+        "type": "follow_up",
+        "reply": "Is the event for Gym all day, or what exact time does it start?",
+        "pendingAction": {
+          "action": "create_calendar_event",
+          "originalMessage": "Add gym tomorrow",
+          "collectedData": {
+            "crossesMidnight": false,
+            "date": "2026-07-31",
+            "title": "Gym"
+          },
+          "missingFields": [
+            "allDayOrStartTime"
+          ],
+          "confidence": 0.9
+        }
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "follow_up",
+        "reply": "Is the event for Gym all day, or what exact time does it start?",
+        "pendingAction": {
+          "action": "create_calendar_event",
+          "originalMessage": "Add gym tomorrow",
+          "collectedData": {
+            "crossesMidnight": false,
+            "date": "2026-07-31",
+            "title": "Gym"
+          },
+          "missingFields": [
+            "allDayOrStartTime"
+          ],
+          "confidence": 0.9
+        }
+      }
+    },
+    {
+      "id": "general-004",
+      "category": "general",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "message",
+        "operationCount": 0,
+        "tools": [],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "message",
+        "tools": [],
+        "operationCount": 0,
+        "arguments": [],
+        "missingFields": [],
+        "confirmations": [],
+        "modes": [],
+        "text": "Sure thing! Here’s a concise draft you can copy‑paste into your email client:\n\n---\n\n**Subject:** Late Arrival to Class\n\n**Hi Professor [Last Name],**\n\nI wanted to let you know that I will be arriving late to class on **[date]** due to **[brief reason, e.g., a prior appointment/transportation issue]**. I’ll make sure to catch up on any material I miss.\n\nThank you for your understanding.\n\nBest regards,  \n**[Your Name]**  \n**[Course/Section]**\n\n---\n\nJust fill in the brackets with the appropriate details and hit send. Let me know if you’d like any tweaks!"
+      },
+      "response": {
+        "ok": true,
+        "type": "message",
+        "reply": "Sure thing! Here’s a concise draft you can copy‑paste into your email client:\n\n---\n\n**Subject:** Late Arrival to Class\n\n**Hi Professor [Last Name],**\n\nI wanted to let you know that I will be arriving late to class on **[date]** due to **[brief reason, e.g., a prior appointment/transportation issue]**. I’ll make sure to catch up on any material I miss.\n\nThank you for your understanding.\n\nBest regards,  \n**[Your Name]**  \n**[Course/Section]**\n\n---\n\nJust fill in the brackets with the appropriate details and hit send. Let me know if you’d like any tweaks!"
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "message",
+        "reply": "Sure thing! Here’s a concise draft you can copy‑paste into your email client:\n\n---\n\n**Subject:** Late Arrival to Class\n\n**Hi Professor [Last Name],**\n\nI wanted to let you know that I will be arriving late to class on **[date]** due to **[brief reason, e.g., a prior appointment/transportation issue]**. I’ll make sure to catch up on any material I miss.\n\nThank you for your understanding.\n\nBest regards,  \n**[Your Name]**  \n**[Course/Section]**\n\n---\n\nJust fill in the brackets with the appropriate details and hit send. Let me know if you’d like any tweaks!"
+      }
+    },
+    {
+      "id": "general-005",
+      "category": "general",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "message",
+        "operationCount": 0,
+        "tools": [],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "message",
+        "tools": [],
+        "operationCount": 0,
+        "arguments": [],
+        "missingFields": [],
+        "confirmations": [],
+        "modes": [],
+        "text": "I can’t purchase tickets directly, but I can help you remember to get them. Would you like me to create a task like “Buy concert tickets” with a due date or reminder?"
+      },
+      "response": {
+        "ok": true,
+        "type": "message",
+        "reply": "I can’t purchase tickets directly, but I can help you remember to get them. Would you like me to create a task like “Buy concert tickets” with a due date or reminder?"
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "message",
+        "reply": "I can’t purchase tickets directly, but I can help you remember to get them. Would you like me to create a task like “Buy concert tickets” with a due date or reminder?"
+      }
+    },
+    {
+      "id": "general-006",
+      "category": "general",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "message",
+        "operationCount": 0,
+        "tools": [],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set",
+          "you have"
+        ]
+      },
+      "actual": {
+        "responseType": "message",
+        "tools": [],
+        "operationCount": 0,
+        "arguments": [],
+        "missingFields": [],
+        "confirmations": [],
+        "modes": [],
+        "text": "I’m not a medical professional, so I can’t diagnose the cause of your fatigue. Persistent tiredness can stem from many factors—such as sleep quality, stress, nutrition, activity levels, underlying health conditions, or medication side effects. It’s best to talk with a healthcare provider who can review your full medical history, run any needed tests, and help identify the specific reasons you’re feeling this way. In the meantime, you might consider tracking your sleep, diet, activity, and stress levels to share useful information with your clinician."
+      },
+      "response": {
+        "ok": true,
+        "type": "message",
+        "reply": "I’m not a medical professional, so I can’t diagnose the cause of your fatigue. Persistent tiredness can stem from many factors—such as sleep quality, stress, nutrition, activity levels, underlying health conditions, or medication side effects. It’s best to talk with a healthcare provider who can review your full medical history, run any needed tests, and help identify the specific reasons you’re feeling this way. In the meantime, you might consider tracking your sleep, diet, activity, and stress levels to share useful information with your clinician."
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "message",
+        "reply": "I’m not a medical professional, so I can’t diagnose the cause of your fatigue. Persistent tiredness can stem from many factors—such as sleep quality, stress, nutrition, activity levels, underlying health conditions, or medication side effects. It’s best to talk with a healthcare provider who can review your full medical history, run any needed tests, and help identify the specific reasons you’re feeling this way. In the meantime, you might consider tracking your sleep, diet, activity, and stress levels to share useful information with your clinician."
+      }
+    },
+    {
+      "id": "general-007",
+      "category": "general",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "message",
+        "operationCount": 0,
+        "tools": [],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "message",
+        "tools": [],
+        "operationCount": 0,
+        "arguments": [],
+        "missingFields": [],
+        "confirmations": [],
+        "modes": [],
+        "text": "I can help you manage your life — quickly add or remove calendar events, create tasks, set up savings goals and log contributions, check your schedule or availability, see progress on your savings, review recent mood/energy check‑in insights, or get a daily/weekly briefing that ties everything together. Just let me know what you’d like to do!"
+      },
+      "response": {
+        "ok": true,
+        "type": "message",
+        "reply": "I can help you manage your life — quickly add or remove calendar events, create tasks, set up savings goals and log contributions, check your schedule or availability, see progress on your savings, review recent mood/energy check‑in insights, or get a daily/weekly briefing that ties everything together. Just let me know what you’d like to do!"
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "message",
+        "reply": "I can help you manage your life — quickly add or remove calendar events, create tasks, set up savings goals and log contributions, check your schedule or availability, see progress on your savings, review recent mood/energy check‑in insights, or get a daily/weekly briefing that ties everything together. Just let me know what you’d like to do!"
+      }
+    },
+    {
+      "id": "general-008",
+      "category": "general",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "message",
+        "operationCount": 0,
+        "tools": [],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "message",
+        "tools": [],
+        "operationCount": 0,
+        "arguments": [],
+        "missingFields": [],
+        "confirmations": [],
+        "modes": [],
+        "text": "Time blocking is a planning method where you split your day into distinct chunks—each block is dedicated to a specific task or activity (like work, exercise, or meals). Instead of a long to‑do list, you schedule exact start and end times for each item, so you know exactly when you’ll focus on it and when you’ll switch to something else. This helps reduce multitasking, protect important work from interruptions, and make it easier to see how your time is actually spent."
+      },
+      "response": {
+        "ok": true,
+        "type": "message",
+        "reply": "Time blocking is a planning method where you split your day into distinct chunks—each block is dedicated to a specific task or activity (like work, exercise, or meals). Instead of a long to‑do list, you schedule exact start and end times for each item, so you know exactly when you’ll focus on it and when you’ll switch to something else. This helps reduce multitasking, protect important work from interruptions, and make it easier to see how your time is actually spent."
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "message",
+        "reply": "Time blocking is a planning method where you split your day into distinct chunks—each block is dedicated to a specific task or activity (like work, exercise, or meals). Instead of a long to‑do list, you schedule exact start and end times for each item, so you know exactly when you’ll focus on it and when you’ll switch to something else. This helps reduce multitasking, protect important work from interruptions, and make it easier to see how your time is actually spent."
+      }
+    },
+    {
+      "id": "general-009",
+      "category": "general",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "message",
+        "operationCount": 0,
+        "tools": [],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "message",
+        "tools": [],
+        "operationCount": 0,
+        "arguments": [],
+        "missingFields": [],
+        "confirmations": [],
+        "modes": [],
+        "text": "Hello! How can I help you today?"
+      },
+      "response": {
+        "ok": true,
+        "type": "message",
+        "reply": "Hello! How can I help you today?"
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": true,
+        "type": "message",
+        "reply": "Hello! How can I help you today?"
+      }
+    },
+    {
+      "id": "general-010",
+      "category": "general",
+      "passed": true,
+      "issues": [],
+      "expected": {
+        "responseType": "message",
+        "operationCount": 0,
+        "tools": [],
+        "arguments": {},
+        "missingFields": [],
+        "requiresConfirmation": false,
+        "forbiddenTitles": [
+          "Summarize My",
+          "Show This Week",
+          "What Do I Have",
+          "Help Me Plan",
+          "Add That",
+          "Remove Something"
+        ],
+        "forbiddenClaims": [
+          "I added",
+          "I saved",
+          "I deleted",
+          "I completed",
+          "all set"
+        ]
+      },
+      "actual": {
+        "responseType": "message",
+        "tools": [],
+        "operationCount": 0,
+        "arguments": [],
+        "missingFields": [],
+        "confirmations": [],
+        "modes": [],
+        "text": "Kairo could not safely interpret that request."
+      },
+      "response": {
+        "ok": false,
+        "error": "Kairo could not safely interpret that request."
+      },
+      "firstAttemptPassed": true,
+      "firstResponse": {
+        "ok": false,
+        "error": "Kairo could not safely interpret that request."
+      }
+    }
+  ]
+}

@@ -15,15 +15,19 @@ Cloudflare Workers AI backend for Kairo. It preserves the legacy APIs and adds a
 
 ## Assistant v2 API
 
-`POST /api/assistant-v2` uses `@cf/openai/gpt-oss-120b` and Cloudflare Workers AI traditional function calling. It defines five strict proposal tools:
+`POST /api/assistant-v2` uses `@cf/openai/gpt-oss-120b` and Cloudflare Workers AI traditional function calling. Its capability registry currently exposes nine validated tools:
 
 - `create_calendar_event`
 - `create_task`
 - `create_savings_goal`
 - `add_goal_contribution`
 - `answer_schedule_question`
+- `read_savings_progress`
+- `read_checkin_insights`
+- `generate_daily_briefing`
+- `delete_calendar_event`
 
-The endpoint accepts the newest message, up to eight history messages, the current ISO date/time and IANA timezone, an optional pending action, and only the app context explicitly included by the client. It returns `message`, `follow_up`, or `tool_call`. The Worker validates every result at runtime, always marks tool calls `requiresConfirmation: true`, and never executes a tool or claims that app data was saved.
+The endpoint accepts the newest message, up to eight history messages, the current ISO date/time and IANA timezone, an optional pending action, and only the app context explicitly included by the client. It returns `message`, `follow_up`, `tool_call`, or an ordered multi-operation `plan`. Every operation is checked against the capability registry. Writes and destructive operations require confirmation; read operations do not. The Worker validates every result at runtime, performs at most one constrained repair attempt for invalid model output, and never executes a tool or claims that app data was saved.
 
 ## Structured calendar API
 
@@ -64,6 +68,26 @@ npm test
 npm run check
 npx wrangler deploy --dry-run
 ```
+
+## Reliability lab
+
+The checked-in reliability lab contains exactly 400 curated contract cases covering general conversation, calendar creation/update/deletion, schedule reads, multi-intent requests, contextual follow-ups, tasks, goals, check-ins, and ambiguity. Contract mode validates the complete dataset deterministically. Live modes call an Assistant v2 endpoint and score response type, ordered tools, operation count, important arguments, clarification fields, confirmation policy, execution mode, and forbidden claims.
+
+```bash
+npm run eval:contract
+npm run eval:live:sample
+npm run eval:failed
+npm run eval:report
+```
+
+Set `KAIRO_ASSISTANT_V2_URL` only in the shell running a live evaluation. For example in PowerShell:
+
+```powershell
+$env:KAIRO_ASSISTANT_V2_URL='http://127.0.0.1:8787/api/assistant-v2'
+npm run eval:live:sample
+```
+
+`eval:live:sample` selects 40 cases across every category, uses concurrency two, saves resumable progress, and verifies a failed case once more to distinguish stable failures from model variance. `eval:live` is available for an intentional full 400-case live run. Generated JSON and Markdown results are stored under `eval-results/`; local progress and Worker logs are ignored.
 
 Deploy intentionally with:
 

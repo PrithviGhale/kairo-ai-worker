@@ -197,3 +197,7 @@ dist
 !.env.example
 .dev.vars*
 !.dev.vars.example
+
+# Reliability-lab resumable state and local Worker logs
+eval-results/.live-progress.json
+eval-results/wrangler-dev*.log

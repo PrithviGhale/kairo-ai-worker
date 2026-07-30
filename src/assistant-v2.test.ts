@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import worker from "./index";
-import { ASSISTANT_TOOLS, extractToolCalls, isCalendarDeletionIntent, processAssistantModelResult } from "./assistant-v2";
+import { ASSISTANT_TOOLS, extractToolCalls, isCalendarDeletionIntent, processAssistantModelResult, splitIntentClauses } from "./assistant-v2";
 import { ASSISTANT_V2_MODEL_ID, assistantV2RequestSchema, assistantV2ResponseSchema } from "./assistant-v2-schemas";
 import { MAX_REQUEST_BYTES } from "./schemas";
 import type { Env } from "./types";
@@ -43,7 +43,7 @@ describe("POST /api/assistant-v2", () => {
     const { env, run } = environment({ response: "Hello." });
     await worker.fetch(request(body("Hello")), env);
     expect(run.mock.calls[0][0]).toBe(ASSISTANT_V2_MODEL_ID);
-    expect(run.mock.calls[0][1]).toMatchObject({ tools: ASSISTANT_TOOLS, stream: false, max_tokens: 700 });
+    expect(run.mock.calls[0][1]).toMatchObject({ tools: ASSISTANT_TOOLS, stream: false, max_tokens: 1_800, temperature: 0 });
     expect(ASSISTANT_TOOLS.map((tool) => tool.function.name)).toEqual([
       "create_calendar_event", "delete_calendar_event", "create_task", "create_savings_goal", "add_goal_contribution", "answer_schedule_question",
       "read_savings_progress", "read_checkin_insights", "generate_daily_briefing",
@@ -106,6 +106,55 @@ describe("POST /api/assistant-v2", () => {
     expect(json.toolCall).toMatchObject({ name: "create_calendar_event", requiresConfirmation: true, arguments: { title: "Gym" } });
   });
 
+  it("preserves separate incomplete operations in the critical mixed request", () => {
+    const message = "Add an event tomorrow and next Sunday and remove something from my calendar.";
+    const parsed = assistantV2RequestSchema.parse(body(message));
+    const result = processAssistantModelResult(parsed, {
+      tool_calls: [
+        { name: "create_calendar_event", arguments: event({ title: null, date: "2026-07-30", startTime: null, endTime: null, allDay: null, crossesMidnight: false }) },
+        { name: "create_calendar_event", arguments: event({ title: null, date: "2026-08-02", startTime: null, endTime: null, allDay: null, crossesMidnight: false }) },
+        { name: "delete_calendar_event", arguments: { eventReference: { title: null, date: null, startTime: null, endTime: null, location: null }, reason: "user_requested" } },
+      ],
+    });
+    expect(splitIntentClauses(message)).toHaveLength(3);
+    expect(result).toMatchObject({ type: "plan", plan: { operations: [
+      { tool: "create_calendar_event", status: "needs_clarification", missingFields: ["title", "allDayOrStartTime"] },
+      { tool: "create_calendar_event", status: "needs_clarification", missingFields: ["title", "allDayOrStartTime"] },
+      { tool: "delete_calendar_event", status: "needs_clarification", missingFields: ["eventReference"] },
+    ] } });
+  });
+
+  it("repairs one omitted operation exactly once", async () => {
+    const first = call("create_calendar_event", event({ title: "Gym", date: "2026-07-31", startTime: "18:00", endTime: null, crossesMidnight: false }));
+    const repaired = { tool_calls: [
+      { name: "create_calendar_event", arguments: event({ title: "Gym", date: "2026-07-31", startTime: "18:00", endTime: null, crossesMidnight: false }) },
+      { name: "create_calendar_event", arguments: event({ title: "Church", date: "2026-08-02", startTime: "10:00", endTime: null, crossesMidnight: false }) },
+    ] };
+    const run = vi.fn().mockResolvedValueOnce(first).mockResolvedValueOnce(repaired);
+    const env: Env = { AI: { run }, ASSETS: { fetch: vi.fn(async () => new Response("asset")) } };
+    const response = await worker.fetch(request(body("Add gym tomorrow at 6 PM and church next Sunday at 10 AM")), env);
+    const json = await response.json() as Record<string, any>;
+    expect(json).toMatchObject({ type: "plan", plan: { operations: [{ tool: "create_calendar_event" }, { tool: "create_calendar_event" }] } });
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(run.mock.calls[1][1].messages[0].content).toContain("single permitted repair attempt");
+  });
+
+  it("does not invent all-day status when an event has no time", () => {
+    const parsed = assistantV2RequestSchema.parse(body("Add gym tomorrow"));
+    const result = processAssistantModelResult(parsed, call("create_calendar_event", event({ title: "Gym", date: "2026-07-30", startTime: null, endTime: null, allDay: true, crossesMidnight: false })));
+    expect(result).toMatchObject({ type: "follow_up", pendingAction: { missingFields: ["allDayOrStartTime"] } });
+  });
+
+  it("splits two additions while excluding a negated third event", async () => {
+    const first = call("create_calendar_event", event({ title: "Lunch and Dinner and Gym", date: "2026-07-30", startTime: "12:00", endTime: null, crossesMidnight: false }));
+    const run = vi.fn().mockResolvedValue(first);
+    const env: Env = { AI: { run }, ASSETS: { fetch: vi.fn(async () => new Response("asset")) } };
+    const response = await worker.fetch(request(body("Add lunch tomorrow at noon and dinner Friday at 7 PM, but do not add the gym event")), env);
+    const json = await response.json() as Record<string, any>;
+    expect(json).toMatchObject({ type: "plan", plan: { operations: [{ tool: "create_calendar_event" }, { tool: "create_calendar_event" }] } });
+    expect(JSON.stringify(json)).not.toMatch(/"title":"Gym"/);
+  });
+
   it("grounds a bare weekday action in the previously summarized schedule week", async () => {
     const args = event({ title: "Gym", date: "2026-07-31", startTime: "18:00", endTime: "19:00", crossesMidnight: false });
     const { env } = environment(call("create_calendar_event", args));
@@ -141,12 +190,12 @@ describe("POST /api/assistant-v2", () => {
   });
 
   it.each([
-    ["New York Trip", "2026-08-07", "10:00", "22:00"],
-    ["FIFA Game", "2026-08-02", "15:00", "16:45"],
-  ])("preserves the complete time range for %s", async (title, date, startTime, endTime) => {
+    ["New York Trip", "2026-08-07", "10:00", "22:00", "Add New York Trip August 7 from 10 AM until 10 PM"],
+    ["FIFA Game", "2026-08-02", "15:00", "16:45", "Add FIFA Game Sunday from 3 PM until 4:45 PM"],
+  ])("preserves the complete time range for %s", async (title, date, startTime, endTime, message) => {
     const args = event({ title, date, startTime, endTime, crossesMidnight: false });
     const { env } = environment(call("create_calendar_event", args));
-    const json = await (await worker.fetch(request(body(`Add ${title}`)), env)).json() as Record<string, any>;
+    const json = await (await worker.fetch(request(body(message)), env)).json() as Record<string, any>;
     expect(json.type).toBe("tool_call");
     expect(json.toolCall.arguments).toMatchObject({ title, date, startTime, endTime });
   });

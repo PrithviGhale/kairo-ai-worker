@@ -32,6 +32,12 @@
 		"check": "tsc --noEmit && wrangler deploy --dry-run",
 		"deploy": "wrangler deploy",
 		"dev": "wrangler dev",
+		"eval:contract": "node evals/runner.mjs contract",
+		"eval:live:sample": "node evals/runner.mjs live-sample",
+		"eval:live": "node evals/runner.mjs live-all",
+		"eval:failed": "node evals/runner.mjs failed",
+		"eval:report": "node evals/runner.mjs report",
+		"eval:import-failures": "node evals/import-failures.mjs",
 		"start": "wrangler dev",
 		"test": "vitest run"
 	},

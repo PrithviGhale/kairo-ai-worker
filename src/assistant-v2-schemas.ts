@@ -14,23 +14,14 @@ import {
   savingsProgressArgumentsSchema,
   type IntelligenceToolResult,
 } from "./intelligence-schemas";
+import { CAPABILITY_REGISTRY, SUPPORTED_TOOLS } from "./capabilities";
 
 export const ASSISTANT_V2_MODEL_ID = "@cf/openai/gpt-oss-120b";
 export const MAX_ASSISTANT_REPLY_LENGTH = 6_000;
 export const MAX_SCHEDULE_RANGE_DAYS = 90;
 export const MAX_SCHEDULE_RECORDS = 100;
 
-export const assistantActionSchema = z.enum([
-  "create_calendar_event",
-  "delete_calendar_event",
-  "create_task",
-  "create_savings_goal",
-  "add_goal_contribution",
-  "answer_schedule_question",
-  "read_savings_progress",
-  "read_checkin_insights",
-  "generate_daily_briefing",
-]);
+export const assistantActionSchema = z.enum(SUPPORTED_TOOLS as [typeof SUPPORTED_TOOLS[number], ...typeof SUPPORTED_TOOLS]);
 
 const nullableShortText = z.string().trim().min(1).max(500).nullable();
 const nullableDate = localDateSchema.nullable();
@@ -122,8 +113,24 @@ export const pendingActionRequestSchema = z.object({
   missingFields: z.array(z.string().trim().min(1).max(100)).max(20),
 }).strict();
 
+export const uiActionSchema = z.object({
+  id: z.string().trim().min(1).max(100),
+  sourceScreen: z.string().trim().min(1).max(80),
+  parameters: z.record(z.string().max(100), z.unknown()).default({}),
+}).strict();
+
+export const capabilityRegistryRequestSchema = z.object({
+  tools: z.array(assistantActionSchema).max(SUPPORTED_TOOLS.length),
+}).strict();
+
+const planToolResultRequestSchema = z.object({
+  operationId: z.string().trim().min(1).max(80),
+  name: assistantActionSchema,
+  result: z.record(z.string().max(100), z.unknown()),
+}).strict();
+
 export const assistantV2RequestSchema = z.object({
-  message: z.string().trim().min(1).max(MAX_MESSAGE_LENGTH),
+  message: z.string().trim().max(MAX_MESSAGE_LENGTH),
   history: z.array(historyMessageSchema).max(MAX_HISTORY_MESSAGES).default([]),
   currentDate: z.string().refine(
     (value) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value) && !Number.isNaN(Date.parse(value)),
@@ -140,11 +147,18 @@ export const assistantV2RequestSchema = z.object({
   pendingAction: pendingActionRequestSchema.nullable().default(null),
   appContext: appContextSchema.default({ relevantTasks: [], relevantEvents: [], relevantGoals: [] }),
   weekStartsOn: z.enum(["monday", "sunday"]).default("monday"),
+  uiAction: uiActionSchema.nullable().default(null),
+  capabilityRegistry: capabilityRegistryRequestSchema.nullable().default(null),
+  planId: z.string().trim().min(1).max(120).nullable().default(null),
+  toolResults: z.array(planToolResultRequestSchema).max(10).default([]),
   toolResult: z.discriminatedUnion("name", [
     scheduleToolResultSchema,
     ...intelligenceToolResultSchema.options,
   ]).nullable().default(null),
-}).strict();
+}).strict().superRefine((request, context) => {
+  if (!request.message && !request.uiAction && !request.planId) context.addIssue({ code: "custom", path: ["message"], message: "A message, UI action, or plan follow-up is required." });
+  if (request.toolResults.length && !request.planId) context.addIssue({ code: "custom", path: ["planId"], message: "Plan tool results require a plan ID." });
+});
 
 const safeReplySchema = z.string().trim().min(1).max(MAX_ASSISTANT_REPLY_LENGTH).refine(
   (reply) => !/(?:\b(?:i|we|kairo)\s+(?:have\s+)?(?:added|saved|created|updated|scheduled|completed|put|placed|deleted|removed|cancell?ed)\b|\b(?:event|task|goal|contribution|appointment|meeting|concert|trip|game)\s+(?:has|was|is)\s+(?:been\s+)?(?:added|saved|created|updated|scheduled|completed|deleted|removed|cancell?ed)\b|\b(?:done|all set)\b|\b(?:it|that)\s+is\s+now\s+(?:on|in|off)\s+your\b)/i.test(reply),
@@ -295,6 +309,40 @@ const toolCallSchema = z.discriminatedUnion("name", [
   z.object({ name: z.literal("generate_daily_briefing"), requiresConfirmation: z.literal(false), arguments: dailyBriefingArgumentsSchema }).strict(),
 ]);
 
+const planOperationSchema = z.object({
+  id: z.string().trim().regex(/^operation-[1-9]\d*$/).max(80),
+  tool: assistantActionSchema,
+  mode: z.enum(["read", "write", "destructive"]),
+  requiresConfirmation: z.boolean(),
+  arguments: z.record(z.string().max(100), z.unknown()),
+  sourceText: z.string().trim().min(1).max(MAX_MESSAGE_LENGTH),
+  confidence: z.number().min(0).max(1),
+  dependsOn: z.array(z.string().trim().min(1).max(80)).max(10),
+  status: z.enum(["ready", "needs_clarification"]).optional(),
+  missingFields: z.array(z.string().trim().min(1).max(100)).max(20).optional(),
+  question: z.string().trim().min(1).max(500).optional(),
+}).strict().superRefine((operation, context) => {
+  const capability = CAPABILITY_REGISTRY[operation.tool];
+  if (operation.mode !== capability.mode) context.addIssue({ code: "custom", path: ["mode"], message: "Operation mode does not match the tool." });
+  if (operation.requiresConfirmation !== capability.requiresConfirmation) context.addIssue({ code: "custom", path: ["requiresConfirmation"], message: "Confirmation policy does not match the tool." });
+  const schema = operation.status === "needs_clarification" ? toolDraftArgumentSchemas[operation.tool] : toolArgumentSchemas[operation.tool];
+  if (!schema.safeParse(operation.arguments).success) context.addIssue({ code: "custom", path: ["arguments"], message: "Invalid operation arguments." });
+  if (operation.status === "needs_clarification" && (!operation.missingFields?.length || !operation.question)) context.addIssue({ code: "custom", message: "Clarification operations require missing fields and a question." });
+});
+
+export const assistantPlanSchema = z.object({
+  id: z.string().trim().min(1).max(120),
+  title: z.string().trim().min(1).max(160),
+  operations: z.array(planOperationSchema).min(1).max(10),
+}).strict().superRefine((plan, context) => {
+  const seen = new Set<string>();
+  for (const [index, operation] of plan.operations.entries()) {
+    if (seen.has(operation.id)) context.addIssue({ code: "custom", path: ["operations", index, "id"], message: "Operation IDs must be unique." });
+    for (const dependency of operation.dependsOn) if (!seen.has(dependency)) context.addIssue({ code: "custom", path: ["operations", index, "dependsOn"], message: "Dependencies may reference only earlier operations." });
+    seen.add(operation.id);
+  }
+});
+
 export const assistantV2ResponseSchema = z.discriminatedUnion("type", [
   z.object({ ok: z.literal(true), type: z.literal("message"), reply: safeReplySchema }).strict(),
   z.object({
@@ -310,6 +358,7 @@ export const assistantV2ResponseSchema = z.discriminatedUnion("type", [
     }).strict(),
   }).strict(),
   z.object({ ok: z.literal(true), type: z.literal("tool_call"), reply: safeReplySchema, toolCall: toolCallSchema }).strict(),
+  z.object({ ok: z.literal(true), type: z.literal("plan"), reply: safeReplySchema, plan: assistantPlanSchema }).strict(),
 ]);
 
 export type AssistantV2Request = z.infer<typeof assistantV2RequestSchema>;
@@ -318,3 +367,5 @@ export type AssistantV2Response = z.infer<typeof assistantV2ResponseSchema>;
 export type ScheduleQuestionArguments = z.infer<typeof scheduleQuestionArgumentsSchema>;
 export type ScheduleToolResult = z.infer<typeof scheduleToolResultSchema>;
 export type AssistantToolResult = ScheduleToolResult | IntelligenceToolResult;
+export type AssistantPlan = z.infer<typeof assistantPlanSchema>;
+export type PlanOperation = AssistantPlan["operations"][number];
